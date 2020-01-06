@@ -35,28 +35,17 @@ class MPdb(Pdb,object):
         self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         # self.cmdloop()
-        arg = self.getProcess()
+        arg = self.widget.getProcess()
         self.precmd(arg)
         self.onecmd(arg)
 
         self.forget()
         
-    def getProcess(self):
-        curr = time.time()
-
-        while True:
-            
-            if abs(curr - time.time()) < 3:
-                break
-
-            QtCore.QCoreApplication.processEvents()
-            maya.utils.processIdleEvents()
-            
-
+    
 def set_trace():
     global MPDB_UI
     if not MPDB_UI:
-        QtWidgets.QMessageBox.critical(mayaWindow(),u"错误",u"找不到调试器UI , 请尝试重装！")
+        QtWidgets.QMessageBox.critical(mayaWindow(),u"错误",u"找不到 Debugger UI , 请尝试重装！")
         raise RuntimeError("Need to set up the Debugger UI!")
     MPdb(MPDB_UI).set_trace(sys._getframe().f_back)
 

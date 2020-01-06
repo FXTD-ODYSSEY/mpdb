@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="debug">
+    <file>debug_cancel.svg</file>
+    <file>debug_continue.svg</file>
+    <file>debug_run.svg</file>
+    <file>debug_setting.svg</file>
+    <file>debug_step_into.svg</file>
+    <file>debug_step_out.svg</file>
+    <file>debug_step_over.svg</file>
+  </qresource>
+</RCC>
