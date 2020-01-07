@@ -13,8 +13,7 @@ DIR = os.path.dirname(__file__)
 try:
     import Qt
 except:
-    _vendor_path = os.path.join(DIR,"_vendor")
-    sys.path.append(_vendor_path)
+    sys.path.append(os.path.join(DIR,"_vendor"))
     import Qt
 
 from MPdb import set_trace
