@@ -15,6 +15,8 @@ from maya import mel
 from PySide2 import QtGui
 from PySide2 import QtCore
 from PySide2 import QtWidgets
+from Qt.QtCompat import getCppPointer
+from Qt.QtCompat import wrapInstance
 
 from widget import Debugger_UI
 # ----------------------------------------------------------------------------
@@ -34,7 +36,7 @@ def mayaToQT(name):
     if ptr is None:         
         ptr = OpenMayaUI.MQtUtil.findMenuItem( name )
     if ptr is not None:     
-        return shiboken.wrapInstance( long( ptr ), QtWidgets.QWidget )
+        return wrapInstance( long( ptr ), QtWidgets.QWidget )
 
 
 def qtToMaya(widget):
@@ -47,7 +49,7 @@ def qtToMaya(widget):
     """
     return OpenMayaUI.MQtUtil.fullName(
         long(
-            shiboken.getCppPointer(widget)[0]
+            getCppPointer(widget)[0]
         ) 
     )
 
@@ -72,7 +74,7 @@ def mayaWindow():
     :rtype: QMainWindow
     """
     window = OpenMayaUI.MQtUtil.mainWindow()
-    window = shiboken.wrapInstance(long(window), QtWidgets.QMainWindow)
+    window = wrapInstance(long(window), QtWidgets.QMainWindow)
     
     return window
 

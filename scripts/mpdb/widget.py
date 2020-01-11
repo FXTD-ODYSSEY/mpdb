@@ -31,8 +31,8 @@ class Debugger_UI(QtWidgets.QWidget):
 
         ui_path = os.path.join(DIR,"icon","debug.ui")
         loadUi(ui_path,self)
-        # layout = self.QHBoxLayout()
-        # self.setLayout(layout)
+
+        
 
     def getProcess(self):
         curr = time.time()
@@ -75,13 +75,18 @@ class Debugger_UI(QtWidgets.QWidget):
         if ptr is None:     ptr = OpenMayaUI.MQtUtil.findMenuItem( name )
         if ptr is not None: return wrapInstance( long( ptr ), QtWidgets.QWidget )
 
-# import sys
-# MODULE = r""F:\repo\mpdb\scripts\mpdb""
-# if MODULE not in sys.path:
-#     sys.path.append(MODULE)
-# import widget
-# reload(widget)
+import sys
+MODULE = r"F:\repo\mpdb\scripts\mpdb"
+if MODULE not in sys.path:
+    sys.path.append(MODULE)
 
-# debugger = widget.Debugger_UI()
-# debugger.show()
+try:
+        
+    import widget
+    reload(widget)
 
+    debugger = widget.Debugger_UI()
+    debugger.mayaShow()
+except:
+    import traceback
+    traceback.print_exc()
