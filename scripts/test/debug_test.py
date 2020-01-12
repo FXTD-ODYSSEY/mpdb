@@ -1,11 +1,11 @@
 import pdb
 
 def add(a,b):
-    print a,b
+    print (a,b)
     return a+b
 
 def mul(a,b):
-    print a,b
+    print (a,b)
     return a*b
 
 def main():
@@ -19,5 +19,7 @@ def main():
     return a,b,c,d
 
 if __name__ == "__main__":
-    pdb.set_trace()
-    print main()
+    # pdb.set_trace()
+    print (main())
+
+    print "done"

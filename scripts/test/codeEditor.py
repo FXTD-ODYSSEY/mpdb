@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import keyword
+from textwrap import  dedent
 
 from maya import cmds
 from maya import OpenMayaUI
@@ -25,6 +26,11 @@ from Qt.QtCompat import wrapInstance
 # from PySide2.QtWidgets import *
 LINEBAR_COLOR = QColor("#444444")
 LINE_COLOR = QColor("dark")
+LINE_MARGIN = 5
+LINEBAR_NUM_COLOR = QColor("yellow")
+LINEBAR_BP_COLOR = QColor("red")
+
+
 class Highlighter(QSyntaxHighlighter):
     """syntax highlighter"""
     def __init__(self, parent=None):
@@ -229,21 +235,12 @@ class Highlighter(QSyntaxHighlighter):
             self.quotesFormat(text, self._doubleQuotes, 3)
 
 
-# class QLineNumberArea(QWidget):
-#     def __init__(self, editor):
-#         super().__init__(editor)
-#         self.codeEditor = editor
-
-#     def sizeHint(self):
-#         return QSize(self.editor.lineNumberAreaWidth(), 0)
-
-#     def paintEvent(self, event):
-#         self.codeEditor.lineNumberAreaPaintEvent(event)
-
 class QLineNumberArea(QWidget):
     def __init__(self, parent = None):
         super(QLineNumberArea, self).__init__(parent)
-        self.fixWidth = 30
+        self.fixWidth = 10
+        self.paintLineNum = -1
+        self.current_line = -1
 
         self.editor = parent
         layout = QVBoxLayout()
@@ -252,6 +249,8 @@ class QLineNumberArea(QWidget):
         self.editor.updateRequest.connect(self.update_on_scroll)
         self.update_width('1')
 
+    def paintLine(self,num):
+        self.paintLineNum = num
 
     def update_on_scroll(self, rect, scroll):
         if self.isVisible():
@@ -274,7 +273,6 @@ class QLineNumberArea(QWidget):
             painter.fillRect(event.rect(), LINEBAR_COLOR)
             painter.drawRect(event.rect().width()-1, 0, event.rect().width(), event.rect().height() - 1)
             font = painter.font()
-
             current_block = self.editor.textCursor().block().blockNumber() + 1
 
             condition = True
@@ -284,16 +282,21 @@ class QLineNumberArea(QWidget):
                 block_top = block_geometry.translated(offset).top()
                 number += 1
 
-                rect = QRect(0, block_top, self.width() - 5, height)
-
-                if number == current_block:
+                # NOTE set the linebar breakpoint color
+                if self.paintLineNum > 0 and number == self.paintLineNum:
                     font.setBold(True)
-                    block_rect = QRect(5, block_top, self.width() - 10, height)
-                    painter.fillRect(block_rect, Qt.red)
+                    block_rect = QRect(LINE_MARGIN, block_top, self.width() - LINE_MARGIN*2, height)
+                    painter.fillRect(block_rect, LINEBAR_BP_COLOR)
+                # NOTE set the current line color
+                elif number == current_block:
+                    font.setBold(True)
+                    block_rect = QRect(LINE_MARGIN, block_top, self.width() - LINE_MARGIN*2, height)
+                    painter.fillRect(block_rect, LINEBAR_NUM_COLOR)
                 else:
                     font.setBold(False)
 
                 painter.setFont(font)
+                rect = QRect(0, block_top, self.width() - 5, height)
                 painter.drawText(rect, Qt.AlignRight, '%i'%number)
 
                 if block_top > event.rect().bottom():
@@ -302,6 +305,42 @@ class QLineNumberArea(QWidget):
                 block = block.next()
 
             painter.end()
+    
+    def contextMenuEvent(self, event):
+        self.menu = QtWidgets.QMenu(self)
+        goto_action = QtWidgets.QAction('Goto Line', self)
+
+        goto_action.triggered.connect(self.gotoLine)
+        self.menu.addAction(goto_action)
+        pos = QtGui.QCursor.pos()
+        self.menu.popup(pos)
+
+    def gotoLine(self):
+        print "gotoLine",self.current_line
+
+    def mousePressEvent(self,event):
+        self.current_line = self.currentCursorLineNum()
+        self.setCurrentLine(self.current_line)
+        
+    def currentCursorLineNum(self):
+        # NOTE calculate the current click number
+        pos = QtGui.QCursor.pos()
+        local_pos = self.mapFromGlobal(pos)
+        height = self.fontMetrics().height()
+        offset = self.editor.contentOffset()
+        num = int((local_pos.y()+offset.y())/height)
+        document = self.editor.document()
+        max_line = document.lineCount()
+        if num > max_line:
+            num = max_line
+        return num
+
+    def setCurrentLine(self,num):
+        # NOTE Jump Cursor 
+        document = self.editor.document()
+        block = document.findBlockByLineNumber(num-1)
+        cursor = QtGui.QTextCursor(block)
+        self.editor.setTextCursor(cursor)
 
 
 class QCodeEditor(QPlainTextEdit):
@@ -310,12 +349,21 @@ class QCodeEditor(QPlainTextEdit):
         self.lineNumberArea = QLineNumberArea(self)
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
-        self.cursorPositionChanged.connect(self.highlightCurrentLine)
+        # self.cursorPositionChanged.connect(self.highlightCurrentLine)
         self.updateLineNumberAreaWidth(5)
         highlighter = Highlighter(parent=self)
         highlighter.setDocument(self.document())
         
-        self.setStyleSheet('color:##c8c8c8')
+
+        self.paintLineNum = -1
+        self.paintLine(4)
+        self.setPlainText(dedent("""
+            def test()
+                print "test"
+
+            test()
+        """))
+        self.setReadOnly(True)
 
     def lineNumberAreaWidth(self):
         digits = 1
@@ -342,18 +390,44 @@ class QCodeEditor(QPlainTextEdit):
         cr = self.contentsRect()
         self.lineNumberArea.setGeometry(QRect(cr.left(), cr.top(), self.lineNumberAreaWidth(), cr.height()))
 
-    def highlightCurrentLine(self):
-        extraSelections = []
-        if not self.isReadOnly():
-            selection = QTextEdit.ExtraSelection()
-            lineColor = QColor(LINE_COLOR).lighter(100)
-            selection.format.setBackground(lineColor)
-            selection.format.setProperty(QTextFormat.FullWidthSelection, True)
-            selection.cursor = self.textCursor()
-            selection.cursor.clearSelection()
-            extraSelections.append(selection)
-        self.setExtraSelections(extraSelections)
+    def paintEvent(self, event):
+        if self.isVisible() and self.paintLineNum > 0:
 
+            # NOTE 触发resize事件 更新背景
+            self.resize(self.width(),self.height()+1)
+
+            block = self.firstVisibleBlock()
+            height = self.lineNumberArea.fontMetrics().height()
+            number = block.blockNumber()
+            painter = QPainter(self.viewport())
+
+            condition = True
+            while block.isValid() and condition:
+                block_geometry = self.blockBoundingGeometry(block)
+                offset = self.contentOffset()
+                block_top = block_geometry.translated(offset).top()
+                number += 1
+                
+                block_rect = QRect(0, block_top, self.width(), height)
+                
+                if number == self.paintLineNum:
+                    lineColor = QColor(LINE_COLOR).lighter(100)
+                    painter.fillRect(block_rect, lineColor)
+                    painter.drawRect(block_rect)
+                    condition = False
+        
+                if block_top > event.rect().bottom():
+                    condition = False
+                    
+                block = block.next()
+
+            painter.end()
+        return super(QCodeEditor,self).paintEvent(event)
+        
+    def paintLine(self,num):
+        self.paintLineNum = num
+        self.lineNumberArea.paintLine(num)
+        
     def mayaShow(self,name=u"MPDB_DEBUGGER_UI"):
         # NOTE 如果变量存在 就检查窗口多开
         if cmds.window(name,q=1,ex=1):
@@ -379,13 +453,6 @@ class QCodeEditor(QPlainTextEdit):
 
 
 if __name__ == '__main__':
-    # import sys
-    # from PySide2.QtWidgets import QApplication
-
-    # app = QApplication(sys.argv)
-    # codeEditor = QCodeEditor()
-    # codeEditor.show()
-    # sys.exit(app.exec_())
 
     codeEditor = QCodeEditor()
     codeEditor.mayaShow()
