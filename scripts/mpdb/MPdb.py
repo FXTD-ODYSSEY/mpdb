@@ -25,10 +25,10 @@ from PySide2 import QtWidgets
 
 from utils import mayaWindow
 
-class MPdb(Pdb,object):
+class MPDB(Pdb,object):
 
     def __init__(self,widget):
-        super(MPdb.self).__init__()
+        super(MPDB,self).__init__()
         self.widget = widget
 
     def interaction(self, frame, traceback):
@@ -47,7 +47,7 @@ def set_trace():
     if not MPDB_UI:
         QtWidgets.QMessageBox.critical(mayaWindow(),u"错误",u"找不到 Debugger UI , 请尝试重装！")
         raise RuntimeError("Need to set up the Debugger UI!")
-    MPdb(MPDB_UI).set_trace(sys._getframe().f_back)
+    MPDB(MPDB_UI).set_trace(sys._getframe().f_back)
 
 # if __name__ == "__main__":
 #     main()

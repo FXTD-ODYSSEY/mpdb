@@ -16,5 +16,14 @@ except:
     sys.path.append(os.path.join(DIR,"_vendor"))
     import Qt
 
-from MPdb import set_trace
+from MPDB import set_trace
 
+import toolbar
+reload(toolbar)
+import utils
+reload(utils)
+import panel
+reload(panel)
+
+from toolbar import Debugger_UI
+from panel import Debugger_Panel

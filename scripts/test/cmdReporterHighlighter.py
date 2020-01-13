@@ -69,9 +69,9 @@ def launchFromCmdWndIcon():
     cmds.symbolButton(cmdWndIcon, e=1, c=cmdWnd)
 
     # change the main manu item command
-    #menuName = 'wmScriptEditor'
-    #if cmds.menuItem(menuName, q=1, ex=1):
-        #cmds.menuItem(menuName, e=1, c=cmdWnd)
+    menuName = 'wmScriptEditor'
+    if cmds.menuItem(menuName, q=1, ex=1):
+        cmds.menuItem(menuName, e=1, c=cmdWnd)
 
 def getMayaWindowWidget():
     '''get maya window widget for Qt'''

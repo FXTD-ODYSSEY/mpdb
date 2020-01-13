@@ -2,3 +2,5 @@
 *.py[cod]
 .history/
 .vscode/
+
+__pycache__/
