@@ -5,7 +5,7 @@ __email__ =  '820472580@qq.com'
 __date__ = '2020-01-05 21:57:02'
 
 """
-
+utility function
 """
 
 import sys
@@ -15,9 +15,9 @@ from maya import cmds
 from maya import mel 
 from maya import OpenMayaUI
 
-from PySide2 import QtGui
-from PySide2 import QtCore
-from PySide2 import QtWidgets
+from Qt import QtGui
+from Qt import QtCore
+from Qt import QtWidgets
 from Qt.QtCompat import getCppPointer
 from Qt.QtCompat import wrapInstance
 
@@ -111,6 +111,16 @@ def createUIComponentToolBar(ControlName="CustomToolBar"):
 # ----------------------------------------------------------------------------
 
 def mayaShow(widget,name):
+    """mayaShow 
+    show the widget in the Maya native window
+    
+    :param widget: widget to add 
+    :type widget: QWidget
+    :param name: maya window name
+    :type name: str
+    :return: maya window pointer
+    :rtype: QWidget
+    """
     # NOTE 如果变量存在 就检查窗口多开
     if cmds.window(name,q=1,ex=1):
         cmds.deleteUI(name)
@@ -141,7 +151,6 @@ class CollapsibleWidget( QtWidgets.QWidget ):
 
         btn.toggle = False
         btn.setText(u"▼ %s"%btn.text())
-        print container.maximumHeight()
         def toggleFn(btn,anim):
             if btn.toggle:
                 btn.toggle = False
@@ -180,11 +189,118 @@ class CollapsibleWidget( QtWidgets.QWidget ):
             
             height += child.height()
 
+        widget.updateGeometry()
         prefer = widget.sizeHint().height()
         height = total_height - height
         return height if height > prefer else prefer
 
 
+# ----------------------------------------------------------------------------
+
+def replaceWidget(src,dst):
+    u"""replaceWidget 替换组件
+    
+    Parameters
+    ----------
+    src : QWidget
+        源组件
+    dst : QWidget
+        目标组件
+    
+    Returns
+    -------
+    QWidget
+        [description]
+    """
+    updateWidgetState(src,dst)
+    layout = src.parent().layout()
+    layout,index = getTargetLayoutIndex(layout,src)
+    if not layout:
+        print u"没有找到 %s 的 Layout，替换失败" % src
+        return src
+
+    layout.insertWidget(index,dst)
+    src.setParent(None)
+    
+    return dst
+
+def updateWidgetState(src,dst):
+    u"""updateWidgetState 同步组件状态
+    
+    Parameters
+    ----------
+    src : QWidget
+        源组件
+    dst : QWidget
+        目标组件
+    """
+    dst.setAcceptDrops            (src.acceptDrops())
+    dst.setAccessibleDescription  (src.accessibleDescription())
+    dst.setBackgroundRole         (src.backgroundRole())
+    dst.setBaseSize               (src.baseSize())
+    dst.setContentsMargins        (src.contentsMargins())
+    dst.setContextMenuPolicy      (src.contextMenuPolicy())
+    dst.setCursor                 (src.cursor())
+    dst.setFocusPolicy            (src.focusPolicy())
+    dst.setFocusProxy             (src.focusProxy())
+    dst.setFont                   (src.font())
+    dst.setForegroundRole         (src.foregroundRole())
+    dst.setGeometry               (src.geometry())
+    dst.setInputMethodHints       (src.inputMethodHints())
+    dst.setLayout                 (src.layout())
+    dst.setLayoutDirection        (src.layoutDirection())
+    dst.setLocale                 (src.locale())
+    dst.setMask                   (src.mask())
+    dst.setMaximumSize            (src.maximumSize())
+    dst.setMinimumSize            (src.minimumSize())
+    dst.setMouseTracking          (src.hasMouseTracking ())
+    dst.setPalette                (src.palette())
+    dst.setParent                 (src.parent())
+    dst.setSizeIncrement          (src.sizeIncrement())
+    dst.setSizePolicy             (src.sizePolicy())
+    dst.setStatusTip              (src.statusTip())
+    dst.setStyle                  (src.style())
+    dst.setToolTip                (src.toolTip())
+    dst.setUpdatesEnabled         (src.updatesEnabled())
+    dst.setWhatsThis              (src.whatsThis())
+    dst.setWindowFilePath         (src.windowFilePath())
+    dst.setWindowFlags            (src.windowFlags())
+    dst.setWindowIcon             (src.windowIcon())
+    dst.setWindowIconText         (src.windowIconText())
+    dst.setWindowModality         (src.windowModality())
+    dst.setWindowOpacity          (src.windowOpacity())
+    dst.setWindowRole             (src.windowRole())
+    dst.setWindowState            (src.windowState())
+
+
+def getTargetLayoutIndex(layout,target):
+    u"""getTargetLayoutIndex 获取目标 Layout 和 序号
+    
+    Parameters
+    ----------
+    layout : QLayout 
+        通过 QLayout 递归遍历下属的组件
+    target : QWidget
+        要查询的组件
+    
+    Returns
+    -------
+    layout : QLayout
+        查询组件所在的 Layout
+    i : int
+        查询组件所在的 Layout 的序号
+    """
+    count = layout.count()
+    for i in range(count):
+        item = layout.itemAt(i).widget()
+        if item == target:
+            return layout,i
+    else:
+        for child in layout.children():
+            layout,i = getTargetLayoutIndex(child,target)
+            if layout:
+                return layout,i
+        return [None,None]
 
 # ----------------------------------------------------------------------------
 
