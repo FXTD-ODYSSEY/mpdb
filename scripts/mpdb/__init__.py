@@ -22,8 +22,11 @@ import toolbar
 reload(toolbar)
 import utils
 reload(utils)
+import codeEditor
+reload(codeEditor)
 import panel
 reload(panel)
 
 from toolbar import Debugger_UI
 from panel import Debugger_Panel
+from codeEditor import CodeEditor
