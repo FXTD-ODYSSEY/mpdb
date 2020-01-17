@@ -277,6 +277,31 @@ class Debugger_Info(QtWidgets.QWidget):
     def mayaShow(self):
         return mayaShow(self,"MPDB_Info")
 
+class LinkPathLabel(QtWidgets.QLabel):
+    
+    def __init__(self,*args,**kwargs):
+        super(LinkPathLabel,self).__init__(*args,**kwargs)
+        self.linkActivated.connect(self.openPath)
+        self.color = "yellow"
+        self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse|QtCore.Qt.LinksAccessibleByMouse)
+        self.setWordWrap(True)
+
+        font = self.font()
+        font.setPointSize(12)
+        font.setBold(True)
+        self.setFont(font)
+
+    def setText(self,path):
+        self.path = path
+        link = """
+        <html><head/><body><p><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a></p></body></html>
+        """.format(path=path,color=self.color)
+        super(LinkPathLabel,self).setText(link)
+
+    def openPath(self):
+        if os.path.exists(self.path):
+            os.startfile(self.path)
+
 
 class Debugger_Panel(QtWidgets.QWidget):
     def __init__(self):
@@ -288,6 +313,12 @@ class Debugger_Panel(QtWidgets.QWidget):
         topleft.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.editor = CodeEditor(self)
         self.editor_layout = QtWidgets.QVBoxLayout()
+
+        path = r"F:\repo\mpdb\scripts\mpdb\ui\debugVar_ui.py"
+        self.link = LinkPathLabel()
+        self.link.setText(path)
+
+        self.editor_layout.addWidget(self.link)
         self.editor_layout.addWidget(self.editor)
         self.editor_layout.setContentsMargins(0, 0, 0, 0)
         topleft.setLayout(self.editor_layout)
