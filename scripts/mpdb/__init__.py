@@ -18,14 +18,14 @@ except:
 
 from MPDB import set_trace
 
-import toolbar
-reload(toolbar)
 import utils
 reload(utils)
 import codeEditor
 reload(codeEditor)
 import panel
 reload(panel)
+import toolbar
+reload(toolbar)
 
 from toolbar import Debugger_UI
 from panel import Debugger_Panel

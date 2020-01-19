@@ -331,11 +331,9 @@ class QLineNumberArea(QWidget):
         document = self.editor.document()
 
         metrics = self.editor.fontMetrics()
-        print "metrics.lineSpacing()",metrics.lineSpacing()
-        print "metrics.height()",metrics.height()
-        print "metrics.leading()",metrics.leading()
 
-        height = metrics.height() 
+        # NOTE 使用 Courier New 字体需要 加 1
+        height = metrics.height() + 1 
         offset = self.editor.contentOffset()
         bar = self.editor.verticalScrollBar()
         initial_height = (bar.value()+1)*height
@@ -357,16 +355,16 @@ class CodeEditor(QPlainTextEdit):
         self.updateRequest.connect(self.updateLineNumberArea)
         # self.cursorPositionChanged.connect(self.highlightCurrentLine)
 
+        # NOTE 使用 Courier New 字体解决缩进问题
         document = self.document()
         font = document.defaultFont()
         font.setFamily("Courier New,Microsoft YaHei UI")
-        # document.setDefaultFont(font)
+        document.setDefaultFont(font)
 
         self.updateLineNumberAreaWidth(5)
         highlighter = Highlighter(parent=self)
         highlighter.setDocument(document)
         
-        # self.setStyleSheet('font-family:Courier New,Microsoft YaHei UI;')
         self.setReadOnly(True)
         self.setWordWrapMode(QtGui.QTextOption.NoWrap)
         self.paintLineNum = -1

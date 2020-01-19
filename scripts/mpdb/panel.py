@@ -301,6 +301,10 @@ class LinkPathLabel(QtWidgets.QLabel):
     def openPath(self):
         if os.path.exists(self.path):
             os.startfile(self.path)
+        else:
+            title = QtWidgets.QApplication.translate("path", "警告", None, -1)
+            msg = QtWidgets.QApplication.translate("path", "路径不存在", None, -1)
+            QtWidgets.QMessageBox.warning(self,title,msg)
 
 
 class Debugger_Panel(QtWidgets.QWidget):
@@ -314,7 +318,7 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.editor = CodeEditor(self)
         self.editor_layout = QtWidgets.QVBoxLayout()
 
-        path = r"F:\repo\mpdb\scripts\mpdb\ui\debugVar_ui.py"
+        path = r"F:\repo\mpdb\scripts\mpdb\ui\debugVr_ui.py"
         self.link = LinkPathLabel()
         self.link.setText(path)
 

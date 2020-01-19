@@ -58,7 +58,6 @@ def qtToMaya(widget):
 
 # ----------------------------------------------------------------------------
 
-
 def getStatusLine():
     """
     Get the QWidget of Maya's status line. 
@@ -80,6 +79,16 @@ def mayaWindow():
     
     return window
 
+
+def mayaMenu():
+    """
+    Find Maya's main menu bar.
+    
+    :rtype: QMenuBar
+    """
+    for m in mayaWindow().children():
+        if type(m) == QtWidgets.QMenuBar:
+            return m
 # ----------------------------------------------------------------------------
 
 def createUIComponentToolBar(ControlName="CustomToolBar"):
@@ -135,6 +144,27 @@ def mayaShow(widget,name):
     return ptr
 
 # ----------------------------------------------------------------------------
+def traverseChildren(parent,indent="",log=True):
+    """traverseChildren 
+    Traverse into the widget children | print the children hierarchy
+    
+    :param parent: traverse widget
+    :type parent: QWidget
+    :param indent: indentation space, defaults to ""
+    :type indent: str, optional
+    :param log: print the data, defaults to True
+    :type log: bool, optional
+    """        
+    if log:
+        print (indent + str(parent))
+        
+    if not hasattr(parent,"children"):
+        return
+
+    for child in parent.children():
+        traverseChildren(child,indent=indent+"    ")
+# ----------------------------------------------------------------------------
+
 
 class CollapsibleWidget( QtWidgets.QWidget ):
     def __init__(self):
