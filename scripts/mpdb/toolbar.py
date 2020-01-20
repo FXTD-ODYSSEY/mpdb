@@ -18,6 +18,7 @@ from .utils import createUIComponentToolBar
 from .utils import mayaWindow
 from .utils import getStatusLine
 from .utils import traverseChildren
+from .utils import mayaMenu
 from .utils import mayaToQT
 
 from PySide2 import QtGui
@@ -66,23 +67,34 @@ class OverLay(QtWidgets.QWidget):
         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput|QtCore.Qt.FramelessWindowHint)
         self.setFocusPolicy( QtCore.Qt.NoFocus )
         self.hide()
-        self.setEnabled(False)
+        # self.setEnabled(False)
 
-        # self.setAutoFillBackground(True)
+        self.setAutoFillBackground(True)
         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
     def paintEvent(self, event):
         
-        # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
-        painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)   
+        # # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
+        # painter = QtGui.QPainter(self)
+        # painter.setRenderHint(QtGui.QPainter.Antialiasing)   
 
-        rectPath = QtGui.QPainterPath()                      
-        height = self.height() - 4                     
-        rectPath.addRoundedRect(QtCore.QRectF(2, 2, self.width()-4, height), 15, 15)
-        painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-        painter.drawPath(rectPath)
-        painter.setBrush(self.BackgroundColor)
+        # rectPath = QtGui.QPainterPath()                      
+        # height = self.height() - 4                     
+        # rect = QtCore.QRectF(2, 2, self.width()-4, height)
+        # rectPath.addRoundedRect(rect, 15, 15)
+        # painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+        # painter.drawPath(rectPath)
+        # painter.setBrush(self.BackgroundColor)
+        # painter.drawRoundedRect(rect, 15, 15)
+
+        painter = QtGui.QPainter(self)
+        fillColor = QtGui.QColor(255, 0, 0, 180)
+        lineColor = QtGui.QColor(255, 0, 0, 255)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setPen(QtGui.QPen(QtGui.QBrush(lineColor), 2))
+        painter.setBrush(QtGui.QBrush(fillColor))
+        painter.drawRoundedRect(self.rect(), 0, 0)
+        painter.end()
 
 class Debugger_UI(QtWidgets.QWidget):
     def __init__(self):
@@ -103,42 +115,68 @@ class Debugger_UI(QtWidgets.QWidget):
         # self.debug_setting.clicked.connect(self.openPanel)
         self.debug_setting.clicked.connect(self.startDebugMode)
 
-        self.setUpScriptBar()
+        cmdWndIcon = self.setUpScriptIcon()
+        # print cmdWndIcon
+        # cmds.symbolButton( cmdWndIcon,q=1, image=1)
 
-        # window = mayaWindow()
-        # self.border = QtWidgets.QWidget()
-        # self.border.setParent(window)
-        # self.border.setMinimumSize(400,400)
-        # self.border.setStyleSheet("border: 5px solid red;background:black;")
-        # self.border.show()
-        # window.installEventFilter(self)
-        # self.setStyleSheet("border: 5px solid red;background:black;")
+        # # ptr = OpenMayaUI.MQtUtil.findControl( cmdWndIcon )
+        # # self.cmdWndIcon = wrapInstance( long( ptr ), QtWidgets.QPushButton )
+        # main_win = mayaWindow()
+        # self.cmdWndIcon = traverseWidget4ObjectName(main_win,objectName=cmdWndIcon)
+        # print dir(self.cmdWndIcon)
+        # print [self.cmdWndIcon.styleSheet()]
+        # print self.cmdWndIcon.windowIcon()
+
+        # color  = QtGui.QColor("red")
+        # size   = 25
+        # icon   = self.debug_setting.icon()
+        # pixmap = icon.pixmap(size)
+        # image  = pixmap.toImage()
+        # pcolor = image.pixelColor(size,size)
+        # for x in range(image.width()):
+        #     for y in range(image.height()):
+        #         pcolor = image.pixelColor(x, y)
+        #         if pcolor.alpha() > 0:
+        #             color.setAlpha(pcolor.alpha())
+        #             image.setPixelColor(x, y, color)
+        # self.cmdWndIcon.setWindowIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
+        # self.cmdWndIcon.setStyleSheet("background:red;color:red")
 
         self.m_overlay = None
         self.debugMode = False
-        main_win = mayaWindow()
+        # # traverseChildren(main_win)
 
+        # layout = main_win.layout()
+        # print layout
+        # print layout.count()
+        # for i in range(layout.count()):
+        #     print i
 
         workspace = mel.eval("$temp = $gWorkAreaForm")
-        workspace = mayaToQT(workspace)
+        # workspace = mayaToQT(workspace)
 
-        # print workspace.children()
+        # # print workspace.children()
 
-        flag = 0
-        for widget in workspace.children():
-            if type(widget) == QtWidgets.QSplitter:
-                break
+        # flag = 0
+        # for widget in main_win.children():
+        #     if type(widget) == QtWidgets.QWidget:
+        #         flag += 1
+        #         if flag == 3:
+        #             break
 
+        # # print widget,widget.children(),widget.objectName()
+        # # for _widget in widget.children():
+        # #     if type(_widget) == QtWidgets.QWidget:
+        # #         break
+
+        # # print widget,flag,widget.objectName()
+        # # self.m_overlay = OverLay(widget)
+        # # widget.installEventFilter(self)
         
-                
-        print widget,widget.children(),widget.objectName()
-        # for _widget in widget.children():
-        #     if type(_widget) == QtWidgets.QWidget:
-        #         break
-
-        # print widget,flag,widget.objectName()
-        self.m_overlay = OverLay(widget)
-        widget.installEventFilter(self)
+        # widget = mayaToQT(workspace)
+        menu = mayaMenu()
+        self.m_overlay = OverLay(menu)
+        menu.installEventFilter(self)
 
 
     def deleteEvent(self):
@@ -156,8 +194,7 @@ class Debugger_UI(QtWidgets.QWidget):
             self.m_overlay.setGeometry(QtCore.QRect(0,0,obj.width(),obj.height()))
         return False
 
-
-    def setUpScriptBar(self):
+    def setUpScriptIcon(self):
         # get command line formLayout
         gCommandLineForm = mel.eval('$tempVar = $gCommandLineForm')
         commandLineForm = cmds.formLayout(gCommandLineForm, q=1, ca=1)[0]
@@ -168,8 +205,12 @@ class Debugger_UI(QtWidgets.QWidget):
         if menu_list:
             cmds.deleteUI(menu_list)
 
+        # Note 添加右键菜单打开
+        # TODO 使用中键打开
         cmds.popupMenu(p=cmdWndIcon)
         cmds.menuItem(l=u"Open Debugger",c=lambda x: cmds.evalDeferred(Debugger_UI().mayaShow))
+
+        return cmdWndIcon
 
     def rightClickMenu(self, event):
         self.menu = QtWidgets.QMenu(self)
@@ -187,53 +228,17 @@ class Debugger_UI(QtWidgets.QWidget):
         
     def startDebugMode(self):
         self.debugMode = not self.debugMode
+        # if self.debugMode:
+        #     print "red"
+        #     self.setButtonColor(self.cmdWndIcon)
+        # else:
+        #     self.setButtonColor(self.cmdWndIcon,QtGui.QColor(215, 215, 215,0))
+
+
         # app = QtWidgets.QApplication.instance()
-        # print app.styleSheet()
-        if self.debugMode:
-            self.m_overlay.show()
-            # app.setStyleSheet("#MayaWindow {border: 5px solid red}")
-        else:
-            self.m_overlay.hide()
-            # app.setStyleSheet("")
+        # app.setStyleSheet("#MayaWindow {border: 5px solid red}" if self.debugMode else "")
+        self.m_overlay.show() if self.debugMode else self.m_overlay.hide()
 
-    # def eventFilter(self,reciever,event):
-    #     # print event.type(),reciever
-    #     if event.type() == QtCore.QEvent.Type.Paint:
-    #         print "=========="
-    #         print reciever
-    #         print reciever.objectName()
-    #         painter = QtGui.QPainter(reciever)
-    #         fillColor = QtGui.QColor(255, 165, 0, 180)
-    #         lineColor = QtGui.QColor(0, 0, 0, 255)
-    #         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-    #         painter.setPen(QtGui.QPen(QtGui.QBrush(lineColor), 2))
-    #         painter.setBrush(QtGui.QBrush(fillColor))
-    #         painter.drawRoundedRect(reciever.rect(), 15, 15)
-    #         painter.end()
-    #         return True
-    #     return False   
-
-
-    # def paintEvent(self, event):
-    #     window = mayaWindow()
-    #     painter = QtGui.QPainter(self)
-    #     fillColor = QtGui.QColor(255, 165, 0, 180)
-    #     lineColor = QtGui.QColor(0, 0, 0, 255)
-    #     painter.setRenderHint(QtGui.QPainter.Antialiasing)
-    #     painter.setPen(QtGui.QPen(QtGui.QBrush(lineColor), 2))
-    #     painter.setBrush(QtGui.QBrush(fillColor))
-    #     painter.drawRoundedRect(self.rect(), 15, 15)
-    #     painter.end()
-
-    # def paintEvent(self, event):
-    #     if self.debugMode:
-    #         print "paint"
-    #         window = mayaWindow()
-    #         painter = QtGui.QPainter(window)
-    #         painter.setPen(QtGui.QColor("red"))
-    #         painter.drawRect(window.rect())
-    #         painter.end()
-        
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         icon = button.icon()
         pixmap = icon.pixmap(size)
@@ -263,35 +268,31 @@ class Debugger_UI(QtWidgets.QWidget):
         if not cmds.workspaceControl(name,ex=1):
 
             toolBar = createUIComponentToolBar(name)
+            # toolBar.setFixedHeight(0)
+            # toolBar.setMaximumWidth(self.maximumWidth())
+            # toolBar.setMaximumHeight(self.maximumHeight())
             toolBar.layout().addWidget(self)
 
             # NOTE tab widget to the command Line
             cmds.workspaceControl(name,e=1,
                 dockToControl=["CommandLine","right"],
-                heightProperty="fixed",
-                resizeHeight= 20,
-                loadImmediately= 1
             )
-            toolBar.setMaximumWidth(self.maximumWidth())
-            toolBar.setMaximumHeight(self.maximumHeight())
-
+            
             return toolBar
         else:
             if not cmds.workspaceControl(name,q=1,vis=1):
                 cmds.workspaceControl(name,e=1,vis=1)
             if cmds.workspaceControl(name,q=1,fl=1):
                 cmds.evalDeferred(dedent("""
+                    from maya import cmds
                     cmds.workspaceControl('%s',e=1,
                         dockToControl=["CommandLine","right"],
-                        heightProperty="fixed",
-                        resizeHeight= 20,
-                        resizeWidth= 200,
                         loadImmediately= 1
                     )
                 """ % name))
 
 # import sys
-# MODULE = r"F:\repo\mpdb\scripts"
+# MODULE = r"D:\Users\82047\Desktop\repo\mpdb\scripts"
 # if MODULE not in sys.path:
 #     sys.path.append(MODULE)
 

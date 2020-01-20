@@ -102,10 +102,17 @@ def createUIComponentToolBar(ControlName="CustomToolBar"):
     help_line = mayaToQT("HelpLine")
     help_line.setObjectName("_HelpLine")
 
-    mel.eval("""
-    createUIComponentToolBar(
-            "HelpLine", localizedUIComponentLabel("%s"), "", $gWorkAreaForm, "top", false);
-    """ % ControlName)
+    cmds.workspaceControl("HelpLine",
+        label=ControlName,
+        loadImmediately= 1,
+        initialHeight=20,
+        heightProperty="fixed",
+    )
+   
+    # mel.eval("""
+    # createUIComponentToolBar("HelpLine", localizedUIComponentLabel("%s"), "", $gWorkAreaForm, "top", false);
+	# workspaceControl -e -initialHeight 20 -heightProperty "fixed" $helpLineWorkspaceControl;
+    # """ % ControlName)
 
     UIComponentToolBar = mayaToQT("HelpLine")
     UIComponentToolBar.setObjectName(ControlName)
@@ -144,6 +151,7 @@ def mayaShow(widget,name):
     return ptr
 
 # ----------------------------------------------------------------------------
+
 def traverseChildren(parent,indent="",log=True):
     """traverseChildren 
     Traverse into the widget children | print the children hierarchy
@@ -156,13 +164,39 @@ def traverseChildren(parent,indent="",log=True):
     :type log: bool, optional
     """        
     if log:
-        print (indent + str(parent))
+        print ("%s%s %s" % (indent,parent,parent.objectName()))
         
     if not hasattr(parent,"children"):
         return
 
     for child in parent.children():
         traverseChildren(child,indent=indent+"    ")
+
+        
+def traverseWidget4ObjectName(parent,objectName=None):
+    """traverseChildren 
+    Traverse into the widget children | print the children hierarchy
+    
+    :param parent: traverse widget
+    :type parent: QWidget
+    :param indent: indentation space, defaults to ""
+    :type indent: str, optional
+    :param log: print the data, defaults to True
+    :type log: bool, optional
+    """        
+
+    
+    if not hasattr(parent,"children") or not hasattr(parent,"objectName"):
+        return
+    
+    if parent.objectName() == objectName:
+        return parent
+
+    for child in parent.children():
+        widget = traverseWidget4ObjectName(child,objectName)
+        if widget:
+            return widget
+
 # ----------------------------------------------------------------------------
 
 
