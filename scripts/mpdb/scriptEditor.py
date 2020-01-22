@@ -12,7 +12,9 @@ from maya import mel
 from maya import cmds
 from Qt import QtWidgets
 
-def __scriptEditorExecuteAll():
+# NOTE globals update https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+def __scriptEditorExecuteAll(borrowed_globals):
+    globals().update(borrowed_globals)
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
 
@@ -33,7 +35,8 @@ def __scriptEditorExecuteAll():
     elif source == "mel":
         mel.eval(text)
 
-def __scriptEditorExecute():
+def __scriptEditorExecute(borrowed_globals):
+    globals().update(borrowed_globals)
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     
     selected_text = cmds.cmdScrollFieldExecuter(executer,q=1,selectedText=1)
@@ -384,14 +387,14 @@ def fixScriptEditorExecute():
                         -annotation (uiRes("m_scriptEditorPanel.kExecuteAll"))
                         -image "executeAll.png"
                         // -command "handleScriptEditorAction \\"executeAll\\""
-                        -command "python \\"from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()\\""
+                        -command "python \\"from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll(globals())\\""
                         executeAllButton;
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
                         // -command "print \\"execute\\""
-                        -command "python \\"from mpdb import  __scriptEditorExecute;__scriptEditorExecute()\\""
+                        -command "python \\"from mpdb import  __scriptEditorExecute;__scriptEditorExecute(globals())\\""
                         executeButton;
 
 
