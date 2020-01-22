@@ -12,11 +12,10 @@ import sys
 DIR = os.path.dirname(__file__)
 try:
     import Qt
-except:
+except ImportError:
     sys.path.append(os.path.join(DIR,"_vendor"))
     import Qt
 
-from MPDB import set_trace
 
 import utils
 reload(utils)
@@ -29,8 +28,11 @@ reload(toolbar)
 import MPDB
 reload(MPDB)
 
+from MPDB import install
+from MPDB import set_trace
+from scriptEditor import __scriptEditorExecuteAll
+from scriptEditor import __scriptEditorExecute
+
 from toolbar import Debugger_UI
 from panel import Debugger_Panel
 from codeEditor import CodeEditor
-from scriptEditor import __scriptEditorExecuteAll
-from scriptEditor import __scriptEditorExecute

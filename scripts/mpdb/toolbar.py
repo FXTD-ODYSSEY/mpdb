@@ -114,6 +114,7 @@ class Debugger_UI(QtWidgets.QWidget):
         
 
     def deleteEvent(self):
+        self.setParent(None)
         cmds.deleteUI("MPDB_DEBUGGER_UI")
 
     def setUpScriptIcon(self):

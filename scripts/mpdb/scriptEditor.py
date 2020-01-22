@@ -12,7 +12,8 @@ from maya import mel
 from maya import cmds
 from Qt import QtWidgets
 
-# NOTE globals update https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+# NOTE 将Maya的脚本编辑器的全部变量引入 
+# NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
 def __scriptEditorExecuteAll(borrowed_globals):
     globals().update(borrowed_globals)
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
@@ -29,6 +30,7 @@ def __scriptEditorExecuteAll(borrowed_globals):
     code = reporter.toPlainText()
     reporter.setPlainText("%s%s\n" % (code,text))
 
+    text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
         exec(text)
@@ -58,18 +60,29 @@ def __scriptEditorExecute(borrowed_globals):
     code = reporter.toPlainText()
     reporter.setPlainText("%s%s\n" % (code,text))
 
+    text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        exec(text)
+        for char in ["\n",".","\t","="]:
+            if char in text:
+                exec(text)
+                break
+        else:
+            exec("from pprint import pprint;pprint(%s)" % text)
+            
     elif source == "mel":
         mel.eval(text)
 
 
 def fixScriptEditorExecute():
-        
+    
+    # NOTE 避免重复修改
+    callback = cmds.scriptedPanelType( 'scriptEditorPanel', q=1, addCallback=1 )
+    if "addScriptEditorPanel2" == callback.strip():
+        return
+    
     # NOTE 从 scriptEditorPanel.mel 复制下来的代码 
     # NOTE 修改 execute & executeAll 按钮的执行代码 修复 Maya2017 运行崩溃问题
-
     version = cmds.about(v=1)[:4]
     if int(version) <= 2017:
         mel.eval('''

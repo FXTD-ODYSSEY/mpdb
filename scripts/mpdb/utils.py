@@ -368,24 +368,3 @@ def getTargetLayoutIndex(layout,target):
 
 # ----------------------------------------------------------------------------
 
-def install():
-    from widget import Debugger_UI
-    
-    global MPDB_UI
-
-    # validate channel box plus
-    if MPDB_UI:
-        raise RuntimeError("Channel box plus is already installed!")
-
-    # convert status line
-    statusLine = getStatusLine()
-    
-    # get parent
-    parent = mayaWindow()
-    
-    # get layout        
-    layout = statusLine.layout()  
-
-    # create command search
-    MPDB_UI = Debugger_UI(parent)
-    layout.addWidget(MPDB_UI)

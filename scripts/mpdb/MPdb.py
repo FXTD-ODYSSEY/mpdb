@@ -54,5 +54,10 @@ def set_trace():
     MPDB_UI = mayaToQT(MPDB_UI).children()[-1]
     MPDB(MPDB_UI).set_trace(sys._getframe().f_back)
 
+def install():
+    import mpdb
+    mpdb.debugger = Debugger_UI()
+    mpdb.debugger_ui = mpdb.debugger.mayaShow()
+
 # if __name__ == "__main__":
 #     main()
