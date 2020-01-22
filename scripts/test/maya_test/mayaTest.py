@@ -1,4 +1,5 @@
-import pdb
+# from __future__ import print_function
+import mpdb
 
 def add(a,b):
     print (a,b)
@@ -12,16 +13,19 @@ def main():
     a = 1
     b = 2
 
-    # pdb.set_trace()
+    mpdb.set_trace()
     c = add(a,b)
 
-    # pdb.set_trace()
+    # mpdb.set_trace()
     d = mul(c,b)
 
+    print (a,b,c,d)
     return a,b,c,d
 
 if __name__ == "__main__":
-    pdb.set_trace()
-    print (main())
+    mpdb.set_trace()
+    main()
 
     print "done"
+
+

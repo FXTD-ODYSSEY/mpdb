@@ -11,7 +11,8 @@ import os
 import sys
 import time
 from textwrap import dedent
-
+from functools import partial
+from functools import wraps
 import toolbar_rc
 
 from .utils import createUIComponentToolBar
@@ -21,12 +22,16 @@ from .utils import traverseChildren
 from .utils import mayaMenu
 from .utils import mayaToQT
 
+from .scriptEditor import fixScriptEditorExecute
+
 from PySide2 import QtGui
 from PySide2 import QtCore
 from PySide2 import QtWidgets
 from Qt.QtCompat import loadUi
 from Qt.QtCompat import wrapInstance
 
+
+import maya
 from maya import cmds
 from maya import mel
 from maya import OpenMayaUI
@@ -34,27 +39,6 @@ from maya import OpenMayaUI
 from .panel import Debugger_Panel
 
 DIR = os.path.dirname(__file__)
-
-
-# class Filter(QtCore.QObject):
-#     def __init__(self, *args, **kwargs):
-#         QtCore.QObject.__init__(self, *args, **kwargs)
-#         self.m_overlay = None
-#         self.m_overlayOn = None
-
-#     def eventFilter(self, obj, event):
-#         if not obj.isWidgetType():
-#             return False
-#         if event.type() == QtCore.QEvent.MouseButtonPress:
-#             if not self.m_overlay:
-#                 self.m_overlay = OverLay(obj.parentWidget())
-#             self.m_overlay.setGeometry(obj.geometry())
-#             self.m_overlayOn = obj
-#             self.m_overlay.show()
-#         elif event.type() == QtCore.QEvent.Resize:
-#             if self.m_overlay and self.m_overlayOn == obj:
-#                 self.m_overlay.setGeometry(obj.geometry())
-#         return False
 
 class OverLay(QtWidgets.QWidget):
     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
@@ -74,35 +58,41 @@ class OverLay(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         
-        # # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
-        # painter = QtGui.QPainter(self)
-        # painter.setRenderHint(QtGui.QPainter.Antialiasing)   
-
-        # rectPath = QtGui.QPainterPath()                      
-        # height = self.height() - 4                     
-        # rect = QtCore.QRectF(2, 2, self.width()-4, height)
-        # rectPath.addRoundedRect(rect, 15, 15)
-        # painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-        # painter.drawPath(rectPath)
-        # painter.setBrush(self.BackgroundColor)
-        # painter.drawRoundedRect(rect, 15, 15)
-
+        # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
         painter = QtGui.QPainter(self)
-        fillColor = QtGui.QColor(255, 0, 0, 180)
-        lineColor = QtGui.QColor(255, 0, 0, 255)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setPen(QtGui.QPen(QtGui.QBrush(lineColor), 2))
-        painter.setBrush(QtGui.QBrush(fillColor))
-        painter.drawRoundedRect(self.rect(), 0, 0)
-        painter.end()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)   
 
+        rectPath = QtGui.QPainterPath()                      
+        height = self.height() - 4                     
+        rect = QtCore.QRectF(2, 2, self.width()-4, height)
+        rectPath.addRoundedRect(rect, 15, 15)
+        painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+        painter.drawPath(rectPath)
+        painter.setBrush(self.BackgroundColor)
+        painter.drawRoundedRect(rect, 15, 15)
+
+def setDebugIcon(func):
+    @wraps(func)
+    def wrapper(self,*args, **kwargs):
+        self.debug_icon.setEnabled(True)
+        args = func(self,*args, **kwargs)
+        self.debug_icon.setEnabled(False)
+        return args
+
+    return wrapper
+    
 class Debugger_UI(QtWidgets.QWidget):
     def __init__(self):
         super(Debugger_UI,self).__init__()
 
         ui_path = os.path.join(DIR,"ui","debug.ui")
         loadUi(ui_path,self)
-
+        
+        self.debug_continue_state  = False
+        self.debug_step_over_state = False
+        self.debug_step_into_state = False
+        self.debug_step_out_state  = False
+        self.debug_cancel_state    = False
 
         self.setButtonColor(self.debug_continue,QtGui.QColor(117, 190, 255))
         self.setButtonColor(self.debug_step_over,QtGui.QColor(117, 190, 255))
@@ -112,87 +102,19 @@ class Debugger_UI(QtWidgets.QWidget):
         self.setButtonColor(self.debug_setting,QtGui.QColor(215, 215, 215))
 
         self.debug_icon.setEnabled(False)
-        # self.debug_setting.clicked.connect(self.openPanel)
-        self.debug_setting.clicked.connect(self.startDebugMode)
+        self.debug_continue.clicked.connect(partial(self.setContinue,True))
+        self.debug_step_over.clicked.connect(partial(self.setStep_over,True))
+        self.debug_step_into.clicked.connect(partial(self.setStep_into,True))
+        self.debug_step_out.clicked.connect(partial(self.setStep_out,True))
+        self.debug_cancel.clicked.connect(partial(self.setCancel,True))
+        self.debug_setting.clicked.connect(self.openPanel)
 
         cmdWndIcon = self.setUpScriptIcon()
-        # print cmdWndIcon
-        # cmds.symbolButton( cmdWndIcon,q=1, image=1)
-
-        # # ptr = OpenMayaUI.MQtUtil.findControl( cmdWndIcon )
-        # # self.cmdWndIcon = wrapInstance( long( ptr ), QtWidgets.QPushButton )
-        # main_win = mayaWindow()
-        # self.cmdWndIcon = traverseWidget4ObjectName(main_win,objectName=cmdWndIcon)
-        # print dir(self.cmdWndIcon)
-        # print [self.cmdWndIcon.styleSheet()]
-        # print self.cmdWndIcon.windowIcon()
-
-        # color  = QtGui.QColor("red")
-        # size   = 25
-        # icon   = self.debug_setting.icon()
-        # pixmap = icon.pixmap(size)
-        # image  = pixmap.toImage()
-        # pcolor = image.pixelColor(size,size)
-        # for x in range(image.width()):
-        #     for y in range(image.height()):
-        #         pcolor = image.pixelColor(x, y)
-        #         if pcolor.alpha() > 0:
-        #             color.setAlpha(pcolor.alpha())
-        #             image.setPixelColor(x, y, color)
-        # self.cmdWndIcon.setWindowIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
-        # self.cmdWndIcon.setStyleSheet("background:red;color:red")
-
-        self.m_overlay = None
-        self.debugMode = False
-        # # traverseChildren(main_win)
-
-        # layout = main_win.layout()
-        # print layout
-        # print layout.count()
-        # for i in range(layout.count()):
-        #     print i
-
-        workspace = mel.eval("$temp = $gWorkAreaForm")
-        # workspace = mayaToQT(workspace)
-
-        # # print workspace.children()
-
-        # flag = 0
-        # for widget in main_win.children():
-        #     if type(widget) == QtWidgets.QWidget:
-        #         flag += 1
-        #         if flag == 3:
-        #             break
-
-        # # print widget,widget.children(),widget.objectName()
-        # # for _widget in widget.children():
-        # #     if type(_widget) == QtWidgets.QWidget:
-        # #         break
-
-        # # print widget,flag,widget.objectName()
-        # # self.m_overlay = OverLay(widget)
-        # # widget.installEventFilter(self)
+        fixScriptEditorExecute()
         
-        # widget = mayaToQT(workspace)
-        menu = mayaMenu()
-        self.m_overlay = OverLay(menu)
-        menu.installEventFilter(self)
-
 
     def deleteEvent(self):
-        if self.m_overlay:
-            self.m_overlay.setParent(None)
         cmds.deleteUI("MPDB_DEBUGGER_UI")
-
-    def eventFilter(self, obj, event):
-        if not obj.isWidgetType():
-            return False
-        
-        if self.debugMode:
-            self.m_overlay.setGeometry(QtCore.QRect(0,0,obj.width(),obj.height()))
-        elif event.type() == QtCore.QEvent.Resize:
-            self.m_overlay.setGeometry(QtCore.QRect(0,0,obj.width(),obj.height()))
-        return False
 
     def setUpScriptIcon(self):
         # get command line formLayout
@@ -211,33 +133,27 @@ class Debugger_UI(QtWidgets.QWidget):
         cmds.menuItem(l=u"Open Debugger",c=lambda x: cmds.evalDeferred(Debugger_UI().mayaShow))
 
         return cmdWndIcon
-
-    def rightClickMenu(self, event):
-        self.menu = QtWidgets.QMenu(self)
-        goto_action = QtWidgets.QAction('Goto Line', self)
-
-        goto_action.triggered.connect(self.gotoLine)
-        self.menu.addAction(goto_action)
-        pos = QtGui.QCursor.pos()
-        self.menu.popup(pos)
         
+    def setContinue(self,state):
+        self.debug_continue_state  = state
+
+    def setStep_over(self,state):
+        self.debug_step_over_state = state
+
+    def setStep_into(self,state):
+        self.debug_step_into_state = state
+
+    def setStep_out(self,state):
+        self.debug_step_out_state  = state
+
+    def setCancel(self,state):
+        self.debug_cancel_state    = state
 
     def openPanel(self):
-        self.panel = Debugger_Panel()
-        self.panel.mayaShow()
+        self.panel = Debugger_Panel().mayaShow()
         
     def startDebugMode(self):
         self.debugMode = not self.debugMode
-        # if self.debugMode:
-        #     print "red"
-        #     self.setButtonColor(self.cmdWndIcon)
-        # else:
-        #     self.setButtonColor(self.cmdWndIcon,QtGui.QColor(215, 215, 215,0))
-
-
-        # app = QtWidgets.QApplication.instance()
-        # app.setStyleSheet("#MayaWindow {border: 5px solid red}" if self.debugMode else "")
-        self.m_overlay.show() if self.debugMode else self.m_overlay.hide()
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         icon = button.icon()
@@ -252,26 +168,52 @@ class Debugger_UI(QtWidgets.QWidget):
                     image.setPixelColor(x, y, color)
         button.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
         
-    def getProcess(self):
+    @setDebugIcon
+    def breakpoint(self,MPDB):
         curr = time.time()
 
         while True:
+            elapsed = abs(curr - time.time())
+            # print elapsed
             
-            if abs(curr - time.time()) < 3:
-                break
+            if elapsed > 3:
+                print "run out of time"
+                return "q"
 
+            if self.debug_continue_state  :
+                self.debug_continue_state  = False
+                return "c"
+
+            if self.debug_step_over_state :
+                self.debug_step_over_state = False
+                return "n"
+
+            if self.debug_step_into_state :
+                self.debug_step_into_state = False
+                return "s"
+
+            if self.debug_step_out_state  :
+                self.debug_step_out_state  = False
+                return "u;;n"
+
+            if self.debug_cancel_state    :
+                self.debug_cancel_state    = False
+                return "q"
+
+            # NOTE Keep Maya alive 
             QtCore.QCoreApplication.processEvents()
             maya.utils.processIdleEvents()
     
     def mayaShow(self,name=u"MPDB_DEBUGGER_UI"):
         
         if not cmds.workspaceControl(name,ex=1):
-
+            
             toolBar = createUIComponentToolBar(name)
+            cmds.workspaceControl(name,e=1,r=1)
+            toolBar.layout().addWidget(self)
             # toolBar.setFixedHeight(0)
             # toolBar.setMaximumWidth(self.maximumWidth())
             # toolBar.setMaximumHeight(self.maximumHeight())
-            toolBar.layout().addWidget(self)
 
             # NOTE tab widget to the command Line
             cmds.workspaceControl(name,e=1,
@@ -307,4 +249,3 @@ class Debugger_UI(QtWidgets.QWidget):
 #     import traceback
 #     traceback.print_exc()
 # # debugger.deleteEvent()
-# # debugger.m_overlay.setParent(None)

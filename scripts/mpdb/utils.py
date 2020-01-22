@@ -24,7 +24,7 @@ from Qt.QtCompat import wrapInstance
 # ----------------------------------------------------------------------------
 
 
-def mayaToQT(name):
+def mayaToQT(name,wrapType=QtWidgets.QWidget):
     """
     Maya -> QWidget
 
@@ -38,7 +38,7 @@ def mayaToQT(name):
     if ptr is None:         
         ptr = OpenMayaUI.MQtUtil.findMenuItem( name )
     if ptr is not None:     
-        return wrapInstance( long( ptr ), QtWidgets.QWidget )
+        return wrapInstance( long( ptr ), wrapType )
 
 
 def qtToMaya(widget):

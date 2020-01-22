@@ -8,8 +8,9 @@ __date__ = '2020-01-04 20:42:11'
 设置断点脚本
 """
 import sys
-from pdb import Pdb
 import time
+from pdb import Pdb
+from textwrap import dedent
 
 import maya
 from maya import cmds
@@ -19,11 +20,9 @@ from Qt import QtGui
 from Qt import QtCore
 from Qt import QtWidgets
 
-from PySide2 import QtGui
-from PySide2 import QtCore
-from PySide2 import QtWidgets
-
-from utils import mayaWindow
+from .utils import mayaWindow
+from .utils import mayaToQT
+from .toolbar import Debugger_UI
 
 class MPDB(Pdb,object):
 
@@ -35,7 +34,8 @@ class MPDB(Pdb,object):
         self.setup(frame, traceback)
         self.print_stack_entry(self.stack[self.curindex])
         # self.cmdloop()
-        arg = self.widget.getProcess()
+
+        arg = self.widget.breakpoint(self)
         self.precmd(arg)
         self.onecmd(arg)
 
@@ -43,10 +43,15 @@ class MPDB(Pdb,object):
         
     
 def set_trace():
-    global MPDB_UI
-    if not MPDB_UI:
+    MPDB_UI = "MPDB_DEBUGGER_UI"
+    if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
         QtWidgets.QMessageBox.critical(mayaWindow(),u"错误",u"找不到 Debugger UI , 请尝试重装！")
         raise RuntimeError("Need to set up the Debugger UI!")
+    elif not cmds.workspaceControl(MPDB_UI,q=1,vis=1):
+        # NOTE 显示 Debugger
+        cmds.workspaceControl(MPDB_UI,e=1,vis=1)
+ 
+    MPDB_UI = mayaToQT(MPDB_UI).children()[-1]
     MPDB(MPDB_UI).set_trace(sys._getframe().f_back)
 
 # if __name__ == "__main__":
