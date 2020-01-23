@@ -10,13 +10,15 @@ __date__ = '2020-01-04 20:39:27'
 import os
 import sys
 DIR = os.path.dirname(__file__)
+
 try:
     import Qt
 except ImportError:
     sys.path.append(os.path.join(DIR,"_vendor"))
     import Qt
 
-
+import scriptEditor
+# reload(scriptEditor)
 import utils
 reload(utils)
 import codeEditor
@@ -28,8 +30,10 @@ reload(toolbar)
 import MPDB
 reload(MPDB)
 
+
 from MPDB import install
 from MPDB import set_trace
+from scriptEditor import __scriptEditorEventFilter
 from scriptEditor import __scriptEditorExecuteAll
 from scriptEditor import __scriptEditorExecute
 

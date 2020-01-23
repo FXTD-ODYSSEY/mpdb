@@ -19,10 +19,9 @@ from .utils import createUIComponentToolBar
 from .utils import mayaWindow
 from .utils import getStatusLine
 from .utils import traverseChildren
-from .utils import mayaMenu
 from .utils import mayaToQT
 
-from .scriptEditor import fixScriptEditorExecute
+from .scriptEditor import enhanceScriptEditor
 
 from PySide2 import QtGui
 from PySide2 import QtCore
@@ -74,9 +73,12 @@ class OverLay(QtWidgets.QWidget):
 def setDebugIcon(func):
     @wraps(func)
     def wrapper(self,*args, **kwargs):
+        main_win = mayaWindow()
+        main_win.setStyleSheet("#MayaWindow {background:red}")
         self.debug_icon.setEnabled(True)
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
+        main_win.setStyleSheet("")
         return args
 
     return wrapper
@@ -110,12 +112,23 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_setting.clicked.connect(self.openPanel)
 
         cmdWndIcon = self.setUpScriptIcon()
-        fixScriptEditorExecute()
+        enhanceScriptEditor()
+        
+    #     self.main_win = mayaWindow()
+    #     self.main_win.installEventFilter(self)
+
+    # def eventFilter(self,reciever, event):
+    #     # NOTE 添加 Ctrl + E 作为执行快捷键
+    #     if event.type() == QtCore.QEvent.Type.KeyPress:
+    #         print "===================="
+    #         active_win = QtWidgets.QApplication.activeWindow()
+    #         print active_win.objectName()
         
 
     def deleteEvent(self):
-        self.setParent(None)
+        # self.main_win.removeEventFilter(self)
         cmds.deleteUI("MPDB_DEBUGGER_UI")
+        self.deleteLater()
 
     def setUpScriptIcon(self):
         # get command line formLayout
@@ -153,8 +166,14 @@ class Debugger_UI(QtWidgets.QWidget):
     def openPanel(self):
         self.panel = Debugger_Panel().mayaShow()
         
-    def startDebugMode(self):
-        self.debugMode = not self.debugMode
+    # def startDebugMode(self,state):
+    #     self.debugMode = state
+    #     main_win = mayaWindow()
+    #     if state:
+    #         main_win.setStyleSheet("#MayaWindow {background:red}")
+    #     else:
+    #         main_win.setStyleSheet("")
+        
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         icon = button.icon()
@@ -170,7 +189,7 @@ class Debugger_UI(QtWidgets.QWidget):
         button.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
         
     @setDebugIcon
-    def breakpoint(self,MPDB):
+    def breakpoint(self,MPDB,frame):
         curr = time.time()
 
         while True:
@@ -250,3 +269,21 @@ class Debugger_UI(QtWidgets.QWidget):
 #     import traceback
 #     traceback.print_exc()
 # # debugger.deleteEvent()
+
+
+# import sys
+# MODULE = r"D:\Users\82047\Desktop\repo\mpdb\scripts"
+# if MODULE not in sys.path:
+#     sys.path.append(MODULE)
+
+# try:
+        
+#     import mpdb
+#     reload(mpdb)
+
+#     mpdb.install()
+    
+# except:
+#     import traceback
+#     traceback.print_exc()
+# # mpdb.debugger.deleteEvent()

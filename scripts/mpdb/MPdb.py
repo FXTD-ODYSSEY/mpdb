@@ -32,10 +32,17 @@ class MPDB(Pdb,object):
 
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
-        self.print_stack_entry(self.stack[self.curindex])
-        # self.cmdloop()
+        # NOTE 完成调试 跳过 Debug 模式
+        if "<string>" == frame.f_code.co_filename:
+            self.precmd("c")
+            self.onecmd("c")
+            self.forget()
+            return
 
-        arg = self.widget.breakpoint(self)
+        self.print_stack_entry(self.stack[self.curindex])
+
+        # self.cmdloop()
+        arg = self.widget.breakpoint(self,frame)
         self.precmd(arg)
         self.onecmd(arg)
 
