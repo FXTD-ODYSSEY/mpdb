@@ -1,4 +1,5 @@
 # mpdb
+
 Maya python Debugger Tool
 
 ## todoList
@@ -9,3 +10,12 @@ Maya python Debugger Tool
 - [x] ~~debug 跳出 mpdb 模块的 frame~~
 - [x] ~~toolbar 嵌入异常~~
 - [x] ~~脚本编辑器 添加 ctlr + E 执行代码功能~~
+- [x]  ~~完善 panel link path 显示~~
+- [x]  ~~脚本编辑器按钮 鼠标中键 打开调试器~~
+- [x]  ~~工具图标 鼠标中键 打开pdb输入模块进行自定义调试输入~~
+- [ ]  使用 QThread 多线程加载窗口 | 减少加载卡顿
+
+## 遇到的问题
+
+- [ ] Debug模式 红框包裹 Maya 主窗口 - 会挡住主窗口使用_(:з」∠)_
+- [ ] reload scriptEditor 报错 - ImportError: reload(): module __main__ not in sys.modules

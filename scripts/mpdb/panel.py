@@ -208,10 +208,10 @@ class FilterTableWidget(QtWidgets.QWidget):
 
         self.signalMapper.mapped.connect(self.on_signalMapper_mapped)  
 
-        headerPos = self.view.mapToGlobal(self.horizontalHeader.pos())        
+        self.headerPos = self.view.mapToGlobal(self.horizontalHeader.pos())        
 
-        posY = headerPos.y() + self.horizontalHeader.height()
-        posX = headerPos.x() + self.horizontalHeader.sectionPosition(self.logicalIndex)
+        posY = self.headerPos.y() + self.horizontalHeader.height()
+        posX = self.headerPos.x() + self.horizontalHeader.sectionPosition(self.logicalIndex)
 
         self.menuValues.exec_(QtCore.QPoint(posX, posY))
 
@@ -262,40 +262,63 @@ class Debugger_Info(QtWidgets.QWidget):
         
         self.filter_table = FilterTableWidget()
 
+        # TODO test code
         data = {
             "a":'1',
             "b":2,
             "c":self.filter_table
         }
-        self.filter_table.addItems(data)
+        self.addItems(data)
 
         replaceWidget(self.Var_Table,self.filter_table)
 
         self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.filter_table)
         self.scope_toggle_anim = CollapsibleWidget.install(self.Scope_Toggle,self.Scope_List)
     
+    def addItems(self,data):
+        self.filter_table.addItems(data)
+
     def mayaShow(self):
         return mayaShow(self,"MPDB_Info")
 
 class LinkPathLabel(QtWidgets.QLabel):
     
-    def __init__(self,*args,**kwargs):
-        super(LinkPathLabel,self).__init__(*args,**kwargs)
+    def __init__(self,panel):
+        super(LinkPathLabel,self).__init__()
+        self.panel = panel
+        self.lineno = None
+        self.path = ""
+
         self.linkActivated.connect(self.openPath)
-        self.color = "yellow"
+        self._color = "yellow"
         self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse|QtCore.Qt.LinksAccessibleByMouse)
         self.setWordWrap(True)
-
+        
         font = self.font()
         font.setPointSize(12)
         font.setBold(True)
         self.setFont(font)
 
-    def setText(self,path):
+    @property
+    def color(self):
+        return self._color
+
+    @color.setter
+    def color(self,value):
+        self._color = value
+        self.setText(self.path,self.lineno)
+
+    def setText(self,path,lineno=None):
         self.path = path
-        link = """
-        <html><head/><body><p><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a></p></body></html>
-        """.format(path=path,color=self.color)
+        self.lineno = lineno
+
+        lineno_label = QtWidgets.QApplication.translate("path", "行数", None, -1)
+        lineno = "<span>%s: (%s)</span>" % (lineno_label,lineno) if lineno else ""
+        path_label = QtWidgets.QApplication.translate("path", "路径", None, -1)
+
+        link = u"""
+        <html><head/><body><p><span>{label}: </span><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a> {lineno}</p></body></html>
+        """.format(label=path_label,path=path,color=self.color,lineno=lineno)
         super(LinkPathLabel,self).setText(link)
 
     def openPath(self):
@@ -308,8 +331,10 @@ class LinkPathLabel(QtWidgets.QLabel):
 
 
 class Debugger_Panel(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self,toolbar):
         super(Debugger_Panel,self).__init__()
+        self.windowName = "MPDB_Panel_UI"
+        self.toolbar = toolbar
 
         self.info_panel = Debugger_Info()
 
@@ -317,14 +342,15 @@ class Debugger_Panel(QtWidgets.QWidget):
         topleft.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.editor = CodeEditor(self)
         self.editor_layout = QtWidgets.QVBoxLayout()
+        self.editor_layout.setContentsMargins(0, 0, 0, 0)
 
+        self.link = LinkPathLabel(self)
+        # TODO test code
         path = r"F:\repo\mpdb\scripts\mpdb\ui\debugVr_ui.py"
-        self.link = LinkPathLabel()
-        self.link.setText(path)
+        self.link.setText(path,3)
 
         self.editor_layout.addWidget(self.link)
         self.editor_layout.addWidget(self.editor)
-        self.editor_layout.setContentsMargins(0, 0, 0, 0)
         topleft.setLayout(self.editor_layout)
 
         self.splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
@@ -337,8 +363,12 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def mayaShow(self):
-        return mayaShow(self,"MPDB_Panel")
+        ptr = mayaShow(self,self.windowName)
+        ptr.destroyed.connect(self.__close)
+        return ptr
 
+    def __close(self):
+        self.setParent(self.toolbar)
 
 # import sys
 # MODULE = r"F:\repo\mpdb\scripts"

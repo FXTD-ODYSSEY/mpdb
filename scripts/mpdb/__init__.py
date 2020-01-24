@@ -36,6 +36,7 @@ from MPDB import set_trace
 from scriptEditor import __scriptEditorEventFilter
 from scriptEditor import __scriptEditorExecuteAll
 from scriptEditor import __scriptEditorExecute
+from scriptEditor import __reporterSetText
 
 from toolbar import Debugger_UI
 from panel import Debugger_Panel

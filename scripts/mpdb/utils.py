@@ -108,11 +108,6 @@ def createUIComponentToolBar(ControlName="CustomToolBar"):
         initialHeight=20,
         heightProperty="fixed",
     )
-   
-    # mel.eval("""
-    # createUIComponentToolBar("HelpLine", localizedUIComponentLabel("%s"), "", $gWorkAreaForm, "top", false);
-	# workspaceControl -e -initialHeight 20 -heightProperty "fixed" $helpLineWorkspaceControl;
-    # """ % ControlName)
 
     UIComponentToolBar = mayaToQT("HelpLine")
     UIComponentToolBar.setObjectName(ControlName)

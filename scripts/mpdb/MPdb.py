@@ -9,6 +9,7 @@ __date__ = '2020-01-04 20:42:11'
 """
 import sys
 import time
+import threading
 from pdb import Pdb
 from textwrap import dedent
 
@@ -34,7 +35,6 @@ class MPDB(Pdb,object):
         self.setup(frame, traceback)
         # NOTE 完成调试 跳过 Debug 模式
         if "<string>" == frame.f_code.co_filename:
-            self.precmd("c")
             self.onecmd("c")
             self.forget()
             return
@@ -42,18 +42,49 @@ class MPDB(Pdb,object):
         self.print_stack_entry(self.stack[self.curindex])
 
         # self.cmdloop()
-        arg = self.widget.breakpoint(self,frame)
-        self.precmd(arg)
-        self.onecmd(arg)
+        stop = None
+        while not stop:
+            if self.cmdqueue:
+                line = self.cmdqueue.pop(0)
+            else:
+                if self.use_rawinput:
+                    line = self.widget.breakpoint(self,frame)
+                else:
+                    self.stdout.write(self.prompt)
+                    self.stdout.flush()
+                    line = self.stdin.readline()
+                    if not len(line):
+                        line = 'EOF'
+                    else:
+                        line = line.rstrip('\r\n')
+
+            line = self.precmd(line)
+            stop = self.onecmd(line)
 
         self.forget()
         
-    
+def loadDebugger():
+    maya.utils.executeDeferred(dedent("""
+        import mpdb
+        import time
+        curr = time.time()
+        mpdb.debugger = mpdb.Debugger_UI()
+        mpdb.debugger_ui = mpdb.debugger.mayaShow()
+        elasped = time.time() - curr
+        print elasped
+    """))
+
+def install():
+    t  = threading.Thread(target=loadDebugger, args=())
+    t.start()
+
 def set_trace():
     MPDB_UI = "MPDB_DEBUGGER_UI"
     if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
-        QtWidgets.QMessageBox.critical(mayaWindow(),u"错误",u"找不到 Debugger UI , 请尝试重装！")
-        raise RuntimeError("Need to set up the Debugger UI!")
+        title = QtWidgets.QApplication.translate("error", "错误", None, -1)
+        msg = QtWidgets.QApplication.translate("error", "找不到 Debugger UI , 请尝试重装！", None, -1)
+        QtWidgets.QMessageBox.critical(mayaWindow(),title,msg)
+        raise RuntimeError(msg)
     elif not cmds.workspaceControl(MPDB_UI,q=1,vis=1):
         # NOTE 显示 Debugger
         cmds.workspaceControl(MPDB_UI,e=1,vis=1)
@@ -61,10 +92,6 @@ def set_trace():
     MPDB_UI = mayaToQT(MPDB_UI).children()[-1]
     MPDB(MPDB_UI).set_trace(sys._getframe().f_back)
 
-def install():
-    import mpdb
-    mpdb.debugger = Debugger_UI()
-    mpdb.debugger_ui = mpdb.debugger.mayaShow()
 
 # if __name__ == "__main__":
 #     main()

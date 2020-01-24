@@ -371,7 +371,7 @@ class CodeEditor(QPlainTextEdit):
 
         self.installEventFilter(self)
 
-        # TODO 
+        # TODO test code
         self.setPlainText(dedent("""
 # coding:utf-8
 

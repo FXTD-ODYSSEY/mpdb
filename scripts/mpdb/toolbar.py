@@ -71,10 +71,14 @@ class OverLay(QtWidgets.QWidget):
         painter.drawRoundedRect(rect, 15, 15)
 
 def setDebugIcon(func):
+    """setDebugIcon Debug 装饰器
+    """
     @wraps(func)
     def wrapper(self,*args, **kwargs):
         main_win = mayaWindow()
+        # NOTE Maya 红框标记
         main_win.setStyleSheet("#MayaWindow {background:red}")
+        # NOTE 激活 Debug 按钮
         self.debug_icon.setEnabled(True)
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
@@ -83,19 +87,42 @@ def setDebugIcon(func):
 
     return wrapper
     
+class MiddleClickSignal(QtCore.QObject):
+    """addExecuteShortcut 监听鼠标中键事件
+    """
+    middleClicked = QtCore.Signal()
+    def __init__(self):
+        super(MiddleClickSignal,self).__init__()
+        
+    def eventFilter(self,reciever,event):
+        if event.type() == QtCore.QEvent.Type.MouseButtonPress:
+            if event.button() == QtCore.Qt.MidButton:
+                self.middleClicked.emit()
+                return True
+        return False
+
 class Debugger_UI(QtWidgets.QWidget):
     def __init__(self):
         super(Debugger_UI,self).__init__()
 
-        ui_path = os.path.join(DIR,"ui","debug.ui")
-        loadUi(ui_path,self)
-        
+        self.windowName = "MPDB_DEBUGGER_UI"
         self.debug_continue_state  = False
         self.debug_step_over_state = False
         self.debug_step_into_state = False
         self.debug_step_out_state  = False
         self.debug_cancel_state    = False
+        self.debug_pdb_state       = False
+        self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb输入模式", None, -1)
+        self.pdb_msg = QtWidgets.QApplication.translate("pdb", "输入 pdb 调试命令", None, -1)
 
+        # NOTE 添加 Ctrl + E 执行快捷键 | 修复 Maya 2017 崩溃问题
+        enhanceScriptEditor()
+
+        # NOTE 加载 UI 文件
+        ui_path = os.path.join(DIR,"ui","debug.ui")
+        loadUi(ui_path,self)
+        
+        # NOTE 设置 Debug 图标颜色
         self.setButtonColor(self.debug_continue,QtGui.QColor(117, 190, 255))
         self.setButtonColor(self.debug_step_over,QtGui.QColor(117, 190, 255))
         self.setButtonColor(self.debug_step_into,QtGui.QColor(117, 190, 255))
@@ -103,7 +130,12 @@ class Debugger_UI(QtWidgets.QWidget):
         self.setButtonColor(self.debug_cancel)
         self.setButtonColor(self.debug_setting,QtGui.QColor(215, 215, 215))
 
+        # NOTE 默认禁用 Debug 图标
         self.debug_icon.setEnabled(False)
+        # NOTE 生成 Debug 面板
+        self.panel = Debugger_Panel(self)
+
+        # NOTE 设置 Debug 图标事件
         self.debug_continue.clicked.connect(partial(self.setContinue,True))
         self.debug_step_over.clicked.connect(partial(self.setStep_over,True))
         self.debug_step_into.clicked.connect(partial(self.setStep_into,True))
@@ -111,45 +143,35 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_cancel.clicked.connect(partial(self.setCancel,True))
         self.debug_setting.clicked.connect(self.openPanel)
 
-        cmdWndIcon = self.setUpScriptIcon()
-        enhanceScriptEditor()
-        
-    #     self.main_win = mayaWindow()
-    #     self.main_win.installEventFilter(self)
+        # NOTE 添加鼠标中键打开 Debug 图标
+        self.setupScriptIconMiddleClick()
+        # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
+        self.setupDebugSettingMiddleClick()
 
-    # def eventFilter(self,reciever, event):
-    #     # NOTE 添加 Ctrl + E 作为执行快捷键
-    #     if event.type() == QtCore.QEvent.Type.KeyPress:
-    #         print "===================="
-    #         active_win = QtWidgets.QApplication.activeWindow()
-    #         print active_win.objectName()
-        
-
-    def deleteEvent(self):
-        # self.main_win.removeEventFilter(self)
-        cmds.deleteUI("MPDB_DEBUGGER_UI")
-        self.deleteLater()
-
-    def setUpScriptIcon(self):
-        # get command line formLayout
+    def setupScriptIconMiddleClick(self):
+        # NOTE 获取 脚本编辑器 图标按钮
         gCommandLineForm = mel.eval('$tempVar = $gCommandLineForm')
         commandLineForm = cmds.formLayout(gCommandLineForm, q=1, ca=1)[0]
-        # get cmdWndIcon button
         cmdWndIcon = cmds.formLayout(commandLineForm, q=1, ca=1)[-1]
-        # change the command of the button
-        menu_list = cmds.symbolButton(cmdWndIcon, q=1, popupMenuArray=1)
-        if menu_list:
-            cmds.deleteUI(menu_list)
+        cmdWnd = mayaToQT(cmdWndIcon)
 
-        # Note 添加右键菜单打开
-        # TODO 使用中键打开
-        cmds.popupMenu(p=cmdWndIcon)
-        cmds.menuItem(l=u"Open Debugger",c=lambda x: cmds.evalDeferred(Debugger_UI().mayaShow))
+        # NOTE 添加中键点击信号
+        self.scriptIcon_signal = MiddleClickSignal()
+        cmdWnd.installEventFilter(self.scriptIcon_signal)
+        self.scriptIcon_signal.middleClicked.connect(self.mayaShow)
 
         return cmdWndIcon
-        
+    
+    def setupDebugSettingMiddleClick(self):
+        self.Setting_signal = MiddleClickSignal()
+        self.debug_setting.installEventFilter(self.Setting_signal)
+        self.Setting_signal.middleClicked.connect(partial(self.setPdb,True))
+
+    def openPanel(self):
+        self.panel_win = self.panel.mayaShow()
+
     def setContinue(self,state):
-        self.debug_continue_state  = state
+        self.debug_continue_state = state
 
     def setStep_over(self,state):
         self.debug_step_over_state = state
@@ -163,19 +185,21 @@ class Debugger_UI(QtWidgets.QWidget):
     def setCancel(self,state):
         self.debug_cancel_state    = state
 
-    def openPanel(self):
-        self.panel = Debugger_Panel().mayaShow()
-        
-    # def startDebugMode(self,state):
-    #     self.debugMode = state
-    #     main_win = mayaWindow()
-    #     if state:
-    #         main_win.setStyleSheet("#MayaWindow {background:red}")
-    #     else:
-    #         main_win.setStyleSheet("")
-        
+    def setPdb(self,state):
+        self.debug_pdb_state  = state
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
+        """setButtonColor set SVG Icon Color
+        
+        Parameters
+        ----------
+        button : QPushButton
+            Icon Button
+        color : QColor, optional
+            set the Icon color, by default QtGui.QColor("red")
+        size : int, optional
+            icon size, by default 25
+        """
         icon = button.icon()
         pixmap = icon.pixmap(size)
         image = pixmap.toImage()
@@ -190,52 +214,63 @@ class Debugger_UI(QtWidgets.QWidget):
         
     @setDebugIcon
     def breakpoint(self,MPDB,frame):
-        curr = time.time()
+        # curr = time.time()
 
         while True:
-            elapsed = abs(curr - time.time())
-            # print elapsed
+            # elapsed = abs(curr - time.time())
+            # # print elapsed
             
-            if elapsed > 3:
-                print "run out of time"
-                return "q"
+            # if elapsed > 3:
+            #     print "run out of time"
+            #     return "q"
 
             if self.debug_continue_state  :
                 self.debug_continue_state  = False
                 return "c"
 
-            if self.debug_step_over_state :
+            elif self.debug_step_over_state :
                 self.debug_step_over_state = False
                 return "n"
 
-            if self.debug_step_into_state :
+            elif self.debug_step_into_state :
                 self.debug_step_into_state = False
                 return "s"
 
-            if self.debug_step_out_state  :
+            elif self.debug_step_out_state  :
                 self.debug_step_out_state  = False
                 return "u;;n"
 
-            if self.debug_cancel_state    :
+            elif self.debug_cancel_state    :
                 self.debug_cancel_state    = False
                 return "q"
+
+            elif self.debug_pdb_state    :
+                self.debug_pdb_state    = False
+                text,ok = QtWidgets.QInputDialog.getText(self,self.pdb_title,self.pdb_msg)
+                if ok and text:
+                    return text
 
             # NOTE Keep Maya alive 
             QtCore.QCoreApplication.processEvents()
             maya.utils.processIdleEvents()
     
-    def mayaShow(self,name=u"MPDB_DEBUGGER_UI"):
-        
+    def closeEvent(self,event):
+        if cmds.workspaceControl(self.windowName,q=1,ex=1):
+            cmds.deleteUI(self.windowName)
+
+        panel_name = self.panel.windowName
+        if cmds.window(panel_name,q=1,ex=1):
+            cmds.deleteUI(panel_name)
+
+    def mayaShow(self):
+        name = self.windowName
         if not cmds.workspaceControl(name,ex=1):
             
             toolBar = createUIComponentToolBar(name)
             cmds.workspaceControl(name,e=1,r=1)
             toolBar.layout().addWidget(self)
-            # toolBar.setFixedHeight(0)
-            # toolBar.setMaximumWidth(self.maximumWidth())
-            # toolBar.setMaximumHeight(self.maximumHeight())
 
-            # NOTE tab widget to the command Line
+            # NOTE Tab widget to the command Line
             cmds.workspaceControl(name,e=1,
                 dockToControl=["CommandLine","right"],
             )

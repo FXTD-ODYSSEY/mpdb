@@ -1,5 +1,6 @@
-# from __future__ import print_function
 import mpdb
+
+# import pdb as mpdb
 
 def add(a,b):
     print (a,b)
@@ -10,10 +11,10 @@ def mul(a,b):
     return a*b
 
 def main():
+    mpdb.set_trace()
     a = 1
     b = 2
 
-    mpdb.set_trace()
     c = add(a,b)
 
     # mpdb.set_trace()

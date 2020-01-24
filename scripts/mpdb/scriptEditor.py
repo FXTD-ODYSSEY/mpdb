@@ -17,13 +17,7 @@ from Qt import QtGui
 from .utils import mayaWindow
 from .utils import mayaToQT
 
-# NOTE 将Maya的脚本编辑器的全部变量引入 
-# NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
-def __scriptEditorExecuteAll(borrowed_globals):
-    globals().update(borrowed_globals)
-    executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
-    text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
-
+def __reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
     for widget in mapp.topLevelWidgets():
         if widget.objectName() == 'MayaWindow':
@@ -35,6 +29,16 @@ def __scriptEditorExecuteAll(borrowed_globals):
     code = reporter.toPlainText()
     reporter.setPlainText("%s%s\n" % (code,text))
     reporter.moveCursor(QtGui.QTextCursor.End) 
+
+# NOTE 将Maya的脚本编辑器的全部变量引入 
+# NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+def __scriptEditorExecuteAll(borrowed_globals):
+    globals().update(borrowed_globals)
+    executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
+    text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
+
+    from mpdb import __reporterSetText
+    __reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
@@ -54,18 +58,8 @@ def __scriptEditorExecute(borrowed_globals):
         text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
         cmds.cmdScrollFieldExecuter(executer,e=1,clear=1)
     
-    
-    mapp = QtWidgets.QApplication.instance()
-    for widget in mapp.topLevelWidgets():
-        if widget.objectName() == 'MayaWindow':
-            mwin = widget
-            break
-        
-    cmdReporters = cmds.lsUI(type='cmdScrollFieldReporter')
-    reporter = mwin.findChild(QtWidgets.QTextEdit, cmdReporters[0])
-    code = reporter.toPlainText()
-    reporter.setPlainText("%s%s\n" % (code,text))
-    reporter.moveCursor(QtGui.QTextCursor.End) 
+    from mpdb import __reporterSetText
+    __reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
@@ -81,20 +75,15 @@ def __scriptEditorExecute(borrowed_globals):
         mel.eval(text)
 
 def __scriptEditorEventFilter():
-    # NOTE 获取 scriptEditor
-    # executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
-    # executer = mayaToQT(executer)
-    # addExecuteShortcut(executer)
-    # # scriptEditor.installEventFilter(addExecuteShortcut())
     import mpdb
     scriptEditor = mayaToQT("scriptEditorPanel1")
-    mpdb.__shortcutEventFilter = addExecuteShortcut(scriptEditor)
+    mpdb.__shortcutEventFilter = AddExecuteShortcut(scriptEditor)
 
-# class addExecuteShortcut(QtWidgets.QWidget):
-class addExecuteShortcut(QtCore.QObject):
-
+class AddExecuteShortcut(QtCore.QObject):
+    """AddExecuteShortcut 监听键盘输入事件
+    """
     def __init__(self,editor):
-        super(addExecuteShortcut,self).__init__()
+        super(AddExecuteShortcut,self).__init__()
         editor.installEventFilter(self)
         
     def eventFilter(self,reciever,event):
@@ -107,7 +96,6 @@ class addExecuteShortcut(QtCore.QObject):
 
         return False
 
-
 def enhanceScriptEditor():
     
     # NOTE 避免重复修改
@@ -115,14 +103,8 @@ def enhanceScriptEditor():
     if "addScriptEditorPanel2" == callback.strip():
         return
     
-    # main_win = mayaWindow()
-    # main_win.installEventFilter(addExecuteShortcut())
-    # print "installEventFilter"
-
     # NOTE 从 scriptEditorPanel.mel 复制下来的代码 
     # NOTE 修改 execute & executeAll 按钮的执行代码 修复 Maya2017 运行崩溃问题
-    # version = cmds.about(v=1)[:4]
-    # if int(version) <= 2017:
     mel.eval('''
         source "scriptEditorPanel.mel";
 
