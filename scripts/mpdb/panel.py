@@ -128,7 +128,7 @@ class FilterTableWidget(QtWidgets.QWidget):
         self.gridLayout.addWidget(self.comboBox, 0, 2, 1, 1)
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
 
-        
+        self.comboBox.setMinimumWidth(150)
         self.model = QtGui.QStandardItemModel(self)
 
         self.proxy = QtCore.QSortFilterProxyModel(self)
@@ -385,12 +385,14 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def mayaShow(self):
+        self.show()
         ptr = mayaShow(self,self.windowName)
         ptr.destroyed.connect(self.__close)
         return ptr
 
     def __close(self):
         self.setParent(self.toolbar)
+        self.hide()
 
 # import sys
 # MODULE = r"F:\repo\mpdb\scripts"

@@ -10,11 +10,8 @@ __date__ = '2020-01-04 20:42:11'
 import os
 import sys
 import time
-import threading
 from pdb import Pdb
-from bdb import BdbQuit
 from textwrap import dedent
-from functools import wraps
 
 import maya
 from maya import cmds
@@ -25,7 +22,6 @@ from Qt import QtCore
 from Qt import QtWidgets
 
 from .utils import mayaWindow
-from .utils import mayaToQT
 from .toolbar import Debugger_UI
 
 class MPDB(Pdb,object):
@@ -130,6 +126,5 @@ def set_trace():
         # NOTE 显示 Debugger
         cmds.workspaceControl(MPDB_UI,e=1,vis=1)
  
-    # debugger = mayaToQT(MPDB_UI).children()[-1]
     MPDB(mpdb.debugger).set_trace(sys._getframe().f_back)
 

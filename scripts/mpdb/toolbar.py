@@ -246,16 +246,23 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_cancel.setToolTip(self.debug_cancel_tip)
         self.debug_setting.setStatusTip(self.debug_setting_tip)
         self.debug_setting.setToolTip(self.debug_setting_tip)
-
+        
+        # NOTE 右键菜单
         self.i18n_mode = QtWidgets.QApplication.translate("i18n", "Language Mode")
         self.i18n_seperator.setText(self.i18n_mode)
 
+        # NOTE 窗口名称
+        if cmds.workspaceControl(self.windowName,q=1,ex=1):
+            toolbar_name = QtWidgets.QApplication.translate("window", "Maya Debugger Toolbar")
+            cmds.workspaceControl(self.windowName,e=1,label=toolbar_name)
+        if cmds.window(self.panel.windowName,q=1,ex=1):
+            panel_name = QtWidgets.QApplication.translate("window", "Maya Debugger Panel")
+            cmds.window(self.panel.windowName,e=1,title=panel_name)
+
     def i18nInstall(self,qm_path):
         if qm_path and os.path.exists(qm_path):
-            print qm_path,os.path.exists(qm_path)
             self.trans.load(qm_path)
             QtWidgets.QApplication.instance().installTranslator(self.trans)
-            print "debug_continue_tip",self.debug_continue_tip
         else:
             QtWidgets.QApplication.instance().removeTranslator(self.trans)
 
@@ -263,7 +270,6 @@ class Debugger_UI(QtWidgets.QWidget):
         if event.type() == QtCore.QEvent.LanguageChange:
             self.retranslateUi()
         super(Debugger_UI, self).changeEvent(event)
-
         
     def showSettingMenu(self, point):
         self.setting_menu.exec_(self.debug_setting.mapToGlobal(point))        
@@ -294,6 +300,7 @@ class Debugger_UI(QtWidgets.QWidget):
 
     def openPanel(self):
         self.panel_win = self.panel.mayaShow()
+        self.retranslateUi()
 
     def setContinue(self,state):
         self.debug_continue_state  = state
@@ -379,6 +386,7 @@ class Debugger_UI(QtWidgets.QWidget):
             maya.utils.processIdleEvents()
     
     def closeEvent(self,event):
+        # NOTE 停止 Debug 模式
         if self.debug_icon.isEnabled():
             self.debug_cancel_state = True
             
@@ -389,8 +397,6 @@ class Debugger_UI(QtWidgets.QWidget):
         if cmds.window(panel_name,q=1,ex=1):
             cmds.deleteUI(panel_name)
 
-        
-
     def mayaShow(self):
         name = self.windowName
         if not cmds.workspaceControl(name,ex=1):
@@ -398,7 +404,7 @@ class Debugger_UI(QtWidgets.QWidget):
             toolBar = createUIComponentToolBar(name)
             cmds.workspaceControl(name,e=1,r=1)
             toolBar.layout().addWidget(self)
-
+            self.retranslateUi()
             # NOTE Tab widget to the command Line
             cmds.workspaceControl(name,e=1,
                 dockToControl=["CommandLine","right"],
@@ -416,38 +422,5 @@ class Debugger_UI(QtWidgets.QWidget):
                         loadImmediately= 1
                     )
                 """ % name))
-
-# import sys
-# MODULE = r"D:\Users\82047\Desktop\repo\mpdb\scripts"
-# if MODULE not in sys.path:
-#     sys.path.append(MODULE)
-
-# try:
         
-#     import mpdb
-#     reload(mpdb)
-
-#     debugger = mpdb.Debugger_UI()
-#     debugger_ui = debugger.mayaShow()
-# except:
-#     import traceback
-#     traceback.print_exc()
-# # debugger.deleteEvent()
-
-
-# import sys
-# MODULE = r"D:\Users\82047\Desktop\repo\mpdb\scripts"
-# if MODULE not in sys.path:
-#     sys.path.append(MODULE)
-
-# try:
         
-#     import mpdb
-#     reload(mpdb)
-
-#     mpdb.install()
-    
-# except:
-#     import traceback
-#     traceback.print_exc()
-# # mpdb.debugger.deleteEvent()

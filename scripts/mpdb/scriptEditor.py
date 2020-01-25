@@ -17,6 +17,8 @@ from Qt import QtGui
 from .utils import mayaWindow
 from .utils import mayaToQT
 
+from bdb import BdbQuit
+
 def __reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
     for widget in mapp.topLevelWidgets():
@@ -42,7 +44,10 @@ def __scriptEditorExecuteAll():
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        maya.utils.executeInMainThreadWithResult(text)
+        try:
+            maya.utils.executeInMainThreadWithResult(text)
+        except BdbQuit:
+            pass
     elif source == "mel":
         mel.eval(text)
 

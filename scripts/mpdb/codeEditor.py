@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-# NOTE https://stackoverflow.com/questions/40386194/create-text-area-textedit-with-line-number-in-pyqt
 import os
 import re
 import sys
@@ -18,11 +17,8 @@ from PySide2.QtCore import Qt, QRect, QSize,QRegExp
 from PySide2.QtWidgets import QWidget, QPlainTextEdit, QTextEdit,QVBoxLayout
 from PySide2.QtGui import QColor, QPainter, QTextFormat,QTextCharFormat,QFont,QSyntaxHighlighter
 
-from Qt.QtCompat import wrapInstance
+from .utils import mayaShow
 
-# from PySide2.QtGui import *
-# from PySide2.QtCore import *
-# from PySide2.QtWidgets import *
 LINEBAR_COLOR = QColor("#444444")
 LINE_COLOR = QColor("dark")
 LINE_MARGIN = 5
@@ -345,6 +341,11 @@ class QLineNumberArea(QWidget):
 
 
 class CodeEditor(QPlainTextEdit):
+    """CodeEditor 
+    # NOTE https://stackoverflow.com/questions/40386194/create-text-area-textedit-with-line-number-in-pyqt
+    """
+
+    windowName = "MPDB_Debugger_CodeEditor"
     def __init__(self, parent=None):
         super(CodeEditor,self).__init__(parent)
         self.lineNumberArea = QLineNumberArea(self)
@@ -446,47 +447,14 @@ class CodeEditor(QPlainTextEdit):
         cursor = QtGui.QTextCursor(block)
         self.setTextCursor(cursor)
 
-    def mayaShow(self,name=u"MPDB_DEBUGGER_UI"):
-        # NOTE 如果变量存在 就检查窗口多开
-        if cmds.window(name,q=1,ex=1):
-            cmds.deleteUI(name)
-        window = cmds.window(name,title=self.windowTitle())
-        cmds.showWindow(window)
-        # NOTE 将Maya窗口转换成 Qt 组件
-        ptr = self.mayaToQT(window)
-        ptr.setLayout(QtWidgets.QVBoxLayout())
-        ptr.layout().setContentsMargins(0,0,0,0)
-        ptr.layout().addWidget(self)
+    def mayaShow(self):
 
+        ptr = mayaShow(self,self.windowName)
         ptr.setWindowTitle(self.windowTitle())
         ptr.setMaximumHeight(self.maximumHeight())
         ptr.setMaximumWidth(self.maximumWidth())
-
-    def mayaToQT( self,name ):
-        # Maya -> QWidget
-        ptr = OpenMayaUI.MQtUtil.findControl( name )
-        if ptr is None:     ptr = OpenMayaUI.MQtUtil.findLayout( name )
-        if ptr is None:     ptr = OpenMayaUI.MQtUtil.findMenuItem( name )
-        if ptr is not None: return wrapInstance( long( ptr ), QtWidgets.QWidget )
-
 
 if __name__ == '__main__':
 
     codeEditor = CodeEditor()
     codeEditor.mayaShow()
-
-
-# import sys
-# MODULE = r"F:\repo\mpdb\scripts"
-# if MODULE not in sys.path:
-#     sys.path.append(MODULE)
-
-# try:
-        
-#     import mpdb
-#     reload(mpdb)
-
-#     debugger_ui = mpdb.CodeEditor().mayaShow()
-# except:
-#     import traceback
-#     traceback.print_exc()

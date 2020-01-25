@@ -30,7 +30,7 @@
 <context>
     <name>i18n</name>
     <message>
-        <location filename="../toolbar.py" line="250"/>
+        <location filename="../toolbar.py" line="251"/>
         <source>Language Mode</source>
         <translation>语言模式</translation>
     </message>
@@ -136,6 +136,19 @@
         <location filename="../MPDB.py" line="118"/>
         <source>Debugger UI already install</source>
         <translation>Debugger UI 已经安装</translation>
+    </message>
+</context>
+<context>
+    <name>window</name>
+    <message>
+        <location filename="../toolbar.py" line="255"/>
+        <source>Maya Debugger Toolbar</source>
+        <translation>Maya 调试工具架</translation>
+    </message>
+    <message>
+        <location filename="../toolbar.py" line="257"/>
+        <source>Maya Debugger Panel</source>
+        <translation>Maya 调试面板</translation>
     </message>
 </context>
 </TS>
