@@ -315,7 +315,6 @@ class QLineNumberArea(QWidget):
         self.menu.popup(pos)
 
     def gotoLine(self):
-        # current_line = self.editor.textCursor().block().blockNumber() + 1
         self.editor.paintLine(self.current_line)
         print "gotoLine",self.current_line
 
@@ -338,13 +337,11 @@ class QLineNumberArea(QWidget):
         bar = self.editor.verticalScrollBar()
         initial_height = (bar.value()+1)*height
 
-        num = int((local_pos.y()+offset.y()+initial_height)/height)
+        num = int((local_pos.y()-offset.y()+initial_height)/height)
         max_line = document.lineCount()
         if num > max_line:
             num = max_line
         return num
-
-
 
 
 class CodeEditor(QPlainTextEdit):
@@ -370,253 +367,6 @@ class CodeEditor(QPlainTextEdit):
         self.paintLineNum = -1
 
         self.installEventFilter(self)
-
-        # TODO test code
-        self.setPlainText(dedent("""
-# coding:utf-8
-
-__author__ =  'timmyliang'
-__email__ =  '820472580@qq.com'
-__date__ = '2020-01-05 21:57:02'
-
-
-import sys
-from functools import partial
-
-from maya import cmds 
-from maya import mel 
-from maya import OpenMayaUI
-
-from Qt import QtGui
-from Qt import QtCore
-from Qt import QtWidgets
-from Qt.QtCompat import getCppPointer
-from Qt.QtCompat import wrapInstance
-
-# ----------------------------------------------------------------------------
-
-
-def mayaToQT(name):
- 
-    ptr = OpenMayaUI.MQtUtil.findControl( name )
-    if ptr is None:         
-        ptr = OpenMayaUI.MQtUtil.findLayout( name )    
-    if ptr is None:         
-        ptr = OpenMayaUI.MQtUtil.findMenuItem( name )
-    if ptr is not None:     
-        return wrapInstance( long( ptr ), QtWidgets.QWidget )
-
-
-def qtToMaya(widget):
-
-    return OpenMayaUI.MQtUtil.fullName(
-        long(
-            getCppPointer(widget)[0]
-        ) 
-    )
-
-
-# ----------------------------------------------------------------------------
-
-
-def getStatusLine():
-    gStatusLine = mel.eval("$tmpVar=$gStatusLine")
-    return mayaToQT(gStatusLine)
-
-def mayaWindow():
-
-    window = OpenMayaUI.MQtUtil.mainWindow()
-    window = wrapInstance(long(window), QtWidgets.QMainWindow)
-    
-    return window
-
-# ----------------------------------------------------------------------------
-
-def createUIComponentToolBar(ControlName="CustomToolBar"):
-    UIComponentToolBar = mayaToQT("HelpLine")
-    UIComponentToolBar.setObjectName(ControlName)
-    help_line.setObjectName("HelpLine")
-    
-    layout = UIComponentToolBar.layout()
-    # NOTE add spacing
-    layout.setContentsMargins(10,0,0,0)
-
-    return UIComponentToolBar
-
-# ----------------------------------------------------------------------------
-
-def mayaShow(widget,name):
-
-    # NOTE 如果变量存在 就检查窗口多开
-    if cmds.window(name,q=1,ex=1):
-        cmds.deleteUI(name)
-    window = cmds.window(name,title=widget.windowTitle())
-    cmds.showWindow(window)
-    # NOTE 将Maya窗口转换成 Qt 组件
-    ptr = mayaToQT(window)
-    ptr.setLayout(QtWidgets.QVBoxLayout())
-    ptr.layout().setContentsMargins(0,0,0,0)
-    ptr.layout().addWidget(widget)
-
-    return ptr
-
-# ----------------------------------------------------------------------------
-
-class CollapsibleWidget( QtWidgets.QWidget ):
-    def __init__(self):
-        super( CollapsibleWidget, self ).__init__()
-        
-    @staticmethod
-    def install(btn,container,duration=300,expand_callback=None,collapse_callback=None):
-        anim = QtCore.QPropertyAnimation(container, "maximumHeight")
-        
-        anim.setDuration(duration)
-        anim.setStartValue(0)
-        anim.setEndValue(container.sizeHint().height())
-        anim.finished.connect(lambda:container.setMaximumHeight(16777215) if not btn.toggle else None)
-
-        btn.toggle = False
-        btn.setText(u"▼ %s"%btn.text())
-        def toggleFn(btn,anim):
-            if btn.toggle:
-                btn.toggle = False
-                anim.setDirection(QtCore.QAbstractAnimation.Forward)
-
-                anim.setEndValue(CollapsibleWidget.getHeightEndValue(container))
-                anim.start()
-                btn.setText(u"▼%s"%btn.text()[1:])
-                btn.setStyleSheet('font:normal')
-                if expand_callback:
-                    expand_callback()
-            else:
-                btn.toggle = True
-                anim.setDirection(QtCore.QAbstractAnimation.Backward)
-                anim.setEndValue(container.sizeHint().height())
-                anim.start()
-                btn.setText(u"■%s"%btn.text()[1:])
-                btn.setStyleSheet('font:bold')
-                if collapse_callback:
-                    collapse_callback()
-
-        func = partial(toggleFn,btn,anim)
-        btn.clicked.connect(func)
-        return func
-
-    @staticmethod
-    def getHeightEndValue(widget):
-
-        parent = widget.parent()
-        total_height = parent.height()
-
-        height = 0
-        for child in parent.children():
-            if child == widget or not hasattr(child,"height"):
-                continue
-            
-            height += child.height()
-
-        widget.updateGeometry()
-        prefer = widget.sizeHint().height()
-        height = total_height - height
-        return height if height > prefer else prefer
-
-
-# ----------------------------------------------------------------------------
-
-def replaceWidget(src,dst):
-
-    updateWidgetState(src,dst)
-    layout = src.parent().layout()
-    layout,index = getTargetLayoutIndex(layout,src)
-    if not layout:
-        print u"没有找到 %s 的 Layout，替换失败" % src
-        return src
-
-    layout.insertWidget(index,dst)
-    src.setParent(None)
-    
-    return dst
-
-def updateWidgetState(src,dst):
-    dst.setAcceptDrops            (src.acceptDrops())
-    dst.setAccessibleDescription  (src.accessibleDescription())
-    dst.setBackgroundRole         (src.backgroundRole())
-    dst.setBaseSize               (src.baseSize())
-    dst.setContentsMargins        (src.contentsMargins())
-    dst.setContextMenuPolicy      (src.contextMenuPolicy())
-    dst.setCursor                 (src.cursor())
-    dst.setFocusPolicy            (src.focusPolicy())
-    dst.setFocusProxy             (src.focusProxy())
-    dst.setFont                   (src.font())
-    dst.setForegroundRole         (src.foregroundRole())
-    dst.setGeometry               (src.geometry())
-    dst.setInputMethodHints       (src.inputMethodHints())
-    dst.setLayout                 (src.layout())
-    dst.setLayoutDirection        (src.layoutDirection())
-    dst.setLocale                 (src.locale())
-    dst.setMask                   (src.mask())
-    dst.setMaximumSize            (src.maximumSize())
-    dst.setMinimumSize            (src.minimumSize())
-    dst.setMouseTracking          (src.hasMouseTracking ())
-    dst.setPalette                (src.palette())
-    dst.setParent                 (src.parent())
-    dst.setSizeIncrement          (src.sizeIncrement())
-    dst.setSizePolicy             (src.sizePolicy())
-    dst.setStatusTip              (src.statusTip())
-    dst.setStyle                  (src.style())
-    dst.setToolTip                (src.toolTip())
-    dst.setUpdatesEnabled         (src.updatesEnabled())
-    dst.setWhatsThis              (src.whatsThis())
-    dst.setWindowFilePath         (src.windowFilePath())
-    dst.setWindowFlags            (src.windowFlags())
-    dst.setWindowIcon             (src.windowIcon())
-    dst.setWindowIconText         (src.windowIconText())
-    dst.setWindowModality         (src.windowModality())
-    dst.setWindowOpacity          (src.windowOpacity())
-    dst.setWindowRole             (src.windowRole())
-    dst.setWindowState            (src.windowState())
-
-
-def getTargetLayoutIndex(layout,target):
-
-    count = layout.count()
-    for i in range(count):
-        item = layout.itemAt(i).widget()
-        if item == target:
-            return layout,i
-    else:
-        for child in layout.children():
-            layout,i = getTargetLayoutIndex(child,target)
-            if layout:
-                return layout,i
-        return [None,None]
-
-# ----------------------------------------------------------------------------
-
-def install():
-    from widget import Debugger_UI
-    
-    global MPDB_UI
-
-    # validate channel box plus
-    if MPDB_UI:
-        raise RuntimeError("Channel box plus is already installed!")
-
-    # convert status line
-    statusLine = getStatusLine()
-    
-    # get parent
-    parent = mayaWindow()
-    
-    # get layout        
-    layout = statusLine.layout()  
-
-    # create command search
-    MPDB_UI = Debugger_UI(parent)
-    layout.addWidget(MPDB_UI)
-
-        """))
-        self.paintLine(66)
 
     def eventFilter(self, reciever, event):
         # NOTE 如果 focus 窗口， 阻断键盘输入
@@ -653,9 +403,6 @@ def install():
     def paintEvent(self, event):
         if self.isVisible() and self.paintLineNum > 0:
 
-            # # TODO 触发resize事件 更新背景
-            # self.resize(self.width(),self.height()+1)
-            # self.resize(self.width(),self.height()-1)
             # NOTE 更新绘制
             self.viewport().update()
 

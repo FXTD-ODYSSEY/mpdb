@@ -83,6 +83,13 @@ def setDebugIcon(func):
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
         main_win.setStyleSheet("")
+
+        # # NOTE 清空面板数据
+        # self.panel.link.setText("")
+        # self.panel.editor.setPlainText("")
+        # self.panel.info_panel.clear()
+        # self.panel.info_panel.Scope_List.clear()
+
         return args
 
     return wrapper
@@ -106,12 +113,13 @@ class Debugger_UI(QtWidgets.QWidget):
         super(Debugger_UI,self).__init__()
 
         self.windowName = "MPDB_DEBUGGER_UI"
-        self.debug_continue_state  = False
-        self.debug_step_over_state = False
-        self.debug_step_into_state = False
-        self.debug_step_out_state  = False
-        self.debug_cancel_state    = False
-        self.debug_pdb_state       = False
+        self.debug_continue_state   = False
+        self.debug_step_over_state  = False
+        self.debug_step_into_state  = False
+        self.debug_step_out_state   = False
+        self.debug_cancel_state     = False
+        self.debug_pdb_state        = False
+        self.debug_cancel_run_state = False
         self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb输入模式", None, -1)
         self.pdb_msg = QtWidgets.QApplication.translate("pdb", "输入 pdb 调试命令", None, -1)
 
@@ -147,6 +155,8 @@ class Debugger_UI(QtWidgets.QWidget):
         self.setupScriptIconMiddleClick()
         # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
         self.setupDebugSettingMiddleClick()
+        # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
+        self.setupDebugCancelMiddleClick()
 
     def setupScriptIconMiddleClick(self):
         # NOTE 获取 脚本编辑器 图标按钮
@@ -167,26 +177,35 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_setting.installEventFilter(self.Setting_signal)
         self.Setting_signal.middleClicked.connect(partial(self.setPdb,True))
 
+    def setupDebugCancelMiddleClick(self):
+        self.Cancel_signal = MiddleClickSignal()
+        self.debug_cancel.installEventFilter(self.Cancel_signal)
+        self.Cancel_signal.middleClicked.connect(partial(self.setCancelRun,True))
+
     def openPanel(self):
         self.panel_win = self.panel.mayaShow()
 
     def setContinue(self,state):
-        self.debug_continue_state = state
+        self.debug_continue_state  = state
 
     def setStep_over(self,state):
-        self.debug_step_over_state = state
+        self.debug_step_over_state  = state
 
     def setStep_into(self,state):
-        self.debug_step_into_state = state
+        self.debug_step_into_state  = state
 
     def setStep_out(self,state):
-        self.debug_step_out_state  = state
+        self.debug_step_out_state   = state
 
     def setCancel(self,state):
-        self.debug_cancel_state    = state
+        self.debug_cancel_state     = state
+
+    def setCancelRun(self,state):
+        self.debug_cancel_run_state = state
 
     def setPdb(self,state):
-        self.debug_pdb_state  = state
+        if self.debug_icon.isEnabled():
+            self.debug_pdb_state = state
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         """setButtonColor set SVG Icon Color
@@ -243,6 +262,10 @@ class Debugger_UI(QtWidgets.QWidget):
             elif self.debug_cancel_state    :
                 self.debug_cancel_state    = False
                 return "q"
+
+            elif self.debug_cancel_run_state    :
+                self.debug_cancel_run_state    = False
+                return "disable;;c"
 
             elif self.debug_pdb_state    :
                 self.debug_pdb_state    = False

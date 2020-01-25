@@ -7,11 +7,14 @@ __date__ = '2020-01-04 20:42:11'
 """
 设置断点脚本
 """
+import os
 import sys
 import time
 import threading
 from pdb import Pdb
+from bdb import BdbQuit
 from textwrap import dedent
+from functools import wraps
 
 import maya
 from maya import cmds
@@ -25,11 +28,34 @@ from .utils import mayaWindow
 from .utils import mayaToQT
 from .toolbar import Debugger_UI
 
+def clearDebugQuit(func):
+    """clearDebugQuit Debug 跳出不报错
+    """
+    @wraps(func)
+    def wrapper(self, frame,*args, **kwargs):
+        try:
+            args = func(self, frame,*args, **kwargs)
+        except BdbQuit:
+            print "BdbQuit"
+            self.stop_here(frame)
+
+        return
+
+    return wrapper
+
 class MPDB(Pdb,object):
 
     def __init__(self,widget):
         super(MPDB,self).__init__()
         self.widget = widget
+
+    # @clearDebugQuit
+    # def dispatch_line(self, frame):
+    #     super(MPDB,self).dispatch_line(frame)
+
+    # @clearDebugQuit
+    # def trace_dispatch(self, frame, event, arg):
+    #     super(MPDB,self).trace_dispatch(frame, event, arg)
 
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
@@ -44,6 +70,7 @@ class MPDB(Pdb,object):
         # self.cmdloop()
         stop = None
         while not stop:
+            self.updatePanel()
             if self.cmdqueue:
                 line = self.cmdqueue.pop(0)
             else:
@@ -58,26 +85,43 @@ class MPDB(Pdb,object):
                     else:
                         line = line.rstrip('\r\n')
 
+      
             line = self.precmd(line)
             stop = self.onecmd(line)
 
         self.forget()
+    
+    def updatePanel(self):
+        filename = self.curframe.f_code.co_filename
+        lineno = self.curframe.f_lineno
+        var_data = self.curframe.f_locals
+        panel = self.widget.panel
+
+        if os.path.exists(filename):
+            with open(filename,'r') as f:
+                code = f.read()
+        else:
+            code = ""
         
-def loadDebugger():
-    maya.utils.executeDeferred(dedent("""
-        import mpdb
-        import time
-        curr = time.time()
-        mpdb.debugger = mpdb.Debugger_UI()
-        mpdb.debugger_ui = mpdb.debugger.mayaShow()
-        elasped = time.time() - curr
-        print elasped
-    """))
+        # NOTE 更新路径和代码
+        panel.link.setText(filename,lineno)
+        panel.editor.setPlainText(code)
+        panel.editor.paintLine(lineno)
+        panel.info_panel.clear()
+        panel.info_panel.addItems(var_data)
+
+        Scope_List = panel.info_panel.Scope_List
+        Scope_List.clear()
+        for stack,lineno in self.stack[2:]:
+            filename = stack.f_code.co_filename
+            panel.info_panel.Scope_List.addItem("%s(%s)" % (filename,lineno))
 
 def install():
-    t  = threading.Thread(target=loadDebugger, args=())
-    t.start()
+    import mpdb
+    mpdb.debugger = mpdb.Debugger_UI()
+    mpdb.debugger_ui = mpdb.debugger.mayaShow()
 
+    
 def set_trace():
     MPDB_UI = "MPDB_DEBUGGER_UI"
     if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):

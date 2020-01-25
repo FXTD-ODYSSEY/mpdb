@@ -13,9 +13,12 @@ Maya python Debugger Tool
 - [x]  ~~完善 panel link path 显示~~
 - [x]  ~~脚本编辑器按钮 鼠标中键 打开调试器~~
 - [x]  ~~工具图标 鼠标中键 打开pdb输入模块进行自定义调试输入~~
-- [ ]  使用 QThread 多线程加载窗口 | 减少加载卡顿
+- [x]  ~~中断执行添加鼠标中键实现跳过断点完成代码执行~~
+- [ ]  数据接入到 Panel 上
 
 ## 遇到的问题
 
+- [ ] 中断执行不报错 - 略过错误无法停止代码运行
+- [ ] 使用 QThread 多线程加载窗口 | 减少加载卡顿 - 使用 Python thread 加载速度，没有什么区别_(:з」∠)_
 - [ ] Debug模式 红框包裹 Maya 主窗口 - 会挡住主窗口使用_(:з」∠)_
 - [ ] reload scriptEditor 报错 - ImportError: reload(): module __main__ not in sys.modules

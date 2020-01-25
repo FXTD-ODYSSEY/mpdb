@@ -251,8 +251,6 @@ class FilterTableWidget(QtWidgets.QWidget):
     def on_comboBox_currentIndexChanged(self, index):
         self.proxy.setFilterKeyColumn(index)
 
-  
-
 class Debugger_Info(QtWidgets.QWidget):
     def __init__(self):
         super(Debugger_Info,self).__init__()
@@ -278,6 +276,9 @@ class Debugger_Info(QtWidgets.QWidget):
     def addItems(self,data):
         self.filter_table.addItems(data)
 
+    def clear(self):
+        self.filter_table.clearItems()
+
     def mayaShow(self):
         return mayaShow(self,"MPDB_Info")
 
@@ -298,6 +299,8 @@ class LinkPathLabel(QtWidgets.QLabel):
         font.setPointSize(12)
         font.setBold(True)
         self.setFont(font)
+        
+        self.setText("")
 
     @property
     def color(self):
@@ -317,7 +320,7 @@ class LinkPathLabel(QtWidgets.QLabel):
         path_label = QtWidgets.QApplication.translate("path", "路径", None, -1)
 
         link = u"""
-        <html><head/><body><p><span>{label}: </span><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a> {lineno}</p></body></html>
+        <html><head/><body><center><span>{label}: </span><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a> {lineno}</center></body></html>
         """.format(label=path_label,path=path,color=self.color,lineno=lineno)
         super(LinkPathLabel,self).setText(link)
 
@@ -345,9 +348,6 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.editor_layout.setContentsMargins(0, 0, 0, 0)
 
         self.link = LinkPathLabel(self)
-        # TODO test code
-        path = r"F:\repo\mpdb\scripts\mpdb\ui\debugVr_ui.py"
-        self.link.setText(path,3)
 
         self.editor_layout.addWidget(self.link)
         self.editor_layout.addWidget(self.editor)
