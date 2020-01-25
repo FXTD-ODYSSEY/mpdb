@@ -31,6 +31,7 @@ from PySide2 import QtCore
 from PySide2 import QtWidgets
 from Qt.QtCompat import loadUi
 from Qt.QtCompat import wrapInstance
+from Qt.QtCompat import translate
 
 
 import maya
@@ -42,6 +43,7 @@ from maya import OpenMayaUI
 DIR = os.path.dirname(__file__)
 
 class OverLay(QtWidgets.QWidget):
+    """OverLay 红框Debug标记 暂时弃用"""
     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
     BackgroundColor = QtGui.QColor(255, 255, 255, 0) 
     
@@ -85,17 +87,49 @@ def setDebugIcon(func):
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
         main_win.setStyleSheet("")
-
-        # # NOTE 清空面板数据
-        # self.panel.link.setText("")
-        # self.panel.editor.setPlainText("")
-        # self.panel.info_panel.clear()
-        # self.panel.info_panel.Scope_List.clear()
-
         return args
-
     return wrapper
-    
+
+class Divider(QtWidgets.QWidget):     
+    """
+    Divider widget that is used in the manager menu and the commands overview.
+    """
+    def __init__(self,text = None):
+        super(Divider,self).__init__()
+        
+        # style sheets
+        labelSS = "QLabel{font: bold; color: orange; border: 0px;}"
+        frameSS = "QFrame{color: gray; margin: 0 12 0 12;}"
+        
+        # create widgets
+        self.label = QtWidgets.QLabel(self)
+        self.label.setFixedHeight(12)
+        self.label.setStyleSheet(labelSS)
+        
+        sep01 = QtWidgets.QFrame(self)
+        sep02 = QtWidgets.QFrame(self)
+        
+        for sep in [sep01,sep02]:
+            sep.setStyleSheet(frameSS)
+            sep.setFrameStyle(QtWidgets.QFrame.HLine)
+            sep.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
+        
+        # create layout
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addWidget(sep01)
+        layout.addWidget(self.label)
+        layout.addWidget(sep02)
+                
+        layout.setContentsMargins(0,0,0,0)
+        layout.setSpacing(0)
+        self.setFixedHeight(12)
+
+        if text:
+            self.setText(text)
+
+    def setText(self,text):
+        self.label.setText(text)
+
 class MiddleClickSignal(QtCore.QObject):
     """addExecuteShortcut 监听鼠标中键事件
     """
@@ -124,8 +158,7 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_cancel_state     = False
         self.debug_pdb_state        = False
         self.debug_cancel_run_state = False
-        self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb输入模式", None, -1)
-        self.pdb_msg = QtWidgets.QApplication.translate("pdb", "输入 pdb 调试命令", None, -1)
+        
 
         # NOTE 添加 Ctrl + E 执行快捷键 | 修复 Maya 2017 崩溃问题
         enhanceScriptEditor()
@@ -161,6 +194,79 @@ class Debugger_UI(QtWidgets.QWidget):
         self.setupDebugSettingMiddleClick()
         # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
         self.setupDebugCancelMiddleClick()
+
+        # NOTE 加载翻译器
+        self.trans = QtCore.QTranslator(self)
+
+        # NOTE setting 图标添加 右键菜单
+        self.debug_setting.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.debug_setting.customContextMenuRequested.connect(self.showSettingMenu)
+
+        self.setting_menu = QtWidgets.QMenu(self)
+
+        self.i18n_seperator = Divider()
+        action = QtWidgets.QWidgetAction(self)
+        action.setDefaultWidget(self.i18n_seperator)
+        self.setting_menu.addAction(action)
+
+        # sep = self.setting_menu.addSeparator()
+        # sep.setText(i18n_mode)
+        chinese_action = QtWidgets.QAction(u"中文", self)
+        english_action = QtWidgets.QAction(u"English", self)
+
+        chinese_qm = os.path.join(DIR,"i18n","zh_CN.qm")
+        chinese_action.triggered.connect(partial(self.i18nInstall,chinese_qm))
+        english_action.triggered.connect(partial(self.i18nInstall,None))
+        self.setting_menu.addAction(chinese_action)
+        self.setting_menu.addAction(english_action)
+
+        self.retranslateUi()
+        
+    def retranslateUi(self):
+        # NOTE pdb 输入框
+        self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb Input Mode")
+        self.pdb_msg = QtWidgets.QApplication.translate("pdb", "Input pdb Debug Command")
+        # NOTE 设置图标提示
+        self.debug_continue_tip = QtWidgets.QApplication.translate("icon", "Debug Continue")
+        self.debug_step_over_tip = QtWidgets.QApplication.translate("icon", "Debug Step Over")
+        self.debug_step_into_tip = QtWidgets.QApplication.translate("icon", "Debug Step Into")
+        self.debug_step_out_tip = QtWidgets.QApplication.translate("icon", "Debug Step Out")
+        self.debug_cancel_tip = QtWidgets.QApplication.translate("icon", "LMB Stop Debug | MMB Ignore Breakpoint")
+        self.debug_setting_tip = QtWidgets.QApplication.translate("icon", "LMB Open Debug Panel | MMB pdb Input Mode | RMB Switch Language")
+
+        self.debug_continue.setStatusTip(self.debug_continue_tip)
+        self.debug_continue.setToolTip(self.debug_continue_tip)
+        self.debug_step_over.setStatusTip(self.debug_step_over_tip)
+        self.debug_step_over.setToolTip(self.debug_step_over_tip)
+        self.debug_step_into.setStatusTip(self.debug_step_into_tip)
+        self.debug_step_into.setToolTip(self.debug_step_into_tip)
+        self.debug_step_out.setStatusTip(self.debug_step_out_tip)
+        self.debug_step_out.setToolTip(self.debug_step_out_tip)
+        self.debug_cancel.setStatusTip(self.debug_cancel_tip)
+        self.debug_cancel.setToolTip(self.debug_cancel_tip)
+        self.debug_setting.setStatusTip(self.debug_setting_tip)
+        self.debug_setting.setToolTip(self.debug_setting_tip)
+
+        self.i18n_mode = QtWidgets.QApplication.translate("i18n", "Language Mode")
+        self.i18n_seperator.setText(self.i18n_mode)
+
+    def i18nInstall(self,qm_path):
+        if qm_path and os.path.exists(qm_path):
+            print qm_path,os.path.exists(qm_path)
+            self.trans.load(qm_path)
+            QtWidgets.QApplication.instance().installTranslator(self.trans)
+            print "debug_continue_tip",self.debug_continue_tip
+        else:
+            QtWidgets.QApplication.instance().removeTranslator(self.trans)
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.LanguageChange:
+            self.retranslateUi()
+        super(Debugger_UI, self).changeEvent(event)
+
+        
+    def showSettingMenu(self, point):
+        self.setting_menu.exec_(self.debug_setting.mapToGlobal(point))        
 
     def setupScriptIconMiddleClick(self):
         # NOTE 获取 脚本编辑器 图标按钮

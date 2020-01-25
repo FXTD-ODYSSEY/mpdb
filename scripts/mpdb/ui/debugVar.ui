@@ -17,7 +17,7 @@
    <item>
     <widget class="QPushButton" name="Var_Toggle">
      <property name="text">
-      <string>域变量</string>
+      <string>Scope Variable</string>
      </property>
     </widget>
    </item>
@@ -125,7 +125,7 @@
    <item>
     <widget class="QPushButton" name="Scope_Toggle">
      <property name="text">
-      <string>函数域</string>
+      <string>Function Scope</string>
      </property>
     </widget>
    </item>

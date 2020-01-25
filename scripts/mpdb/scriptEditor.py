@@ -7,7 +7,7 @@ __date__ = '2020-01-22 22:56:42'
 """
 
 """
-
+import maya
 from maya import mel
 from maya import cmds
 from Qt import QtWidgets
@@ -30,10 +30,9 @@ def __reporterSetText(text):
     reporter.setPlainText("%s%s\n" % (code,text))
     reporter.moveCursor(QtGui.QTextCursor.End) 
 
-# NOTE 将Maya的脚本编辑器的全部变量引入 
-# NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
-def __scriptEditorExecuteAll(borrowed_globals):
-    globals().update(borrowed_globals)
+# NOTE maya.utils.executeInMainThreadWithResult 这个方法无需获取 globals 函数，解决变量定义在当前文件scope下的问题
+# Done 将Maya的脚本编辑器的全部变量引入 https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+def __scriptEditorExecuteAll():
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
 
@@ -43,12 +42,11 @@ def __scriptEditorExecuteAll(borrowed_globals):
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        exec(text)
+        maya.utils.executeInMainThreadWithResult(text)
     elif source == "mel":
         mel.eval(text)
 
-def __scriptEditorExecute(borrowed_globals):
-    globals().update(borrowed_globals)
+def __scriptEditorExecute():
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     
     selected_text = cmds.cmdScrollFieldExecuter(executer,q=1,selectedText=1)
@@ -64,12 +62,13 @@ def __scriptEditorExecute(borrowed_globals):
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
+        
         for char in ["\n",".","\t","="," "]:
             if char in text.strip():
-                exec(text)
+                maya.utils.executeInMainThreadWithResult(text)
                 break
         else:
-            exec("from pprint import pprint;pprint(%s)" % text)
+            maya.utils.executeInMainThreadWithResult("import pprint;pprint.pprint(%s)" % text)
             
     elif source == "mel":
         mel.eval(text)
@@ -91,7 +90,7 @@ class AddExecuteShortcut(QtCore.QObject):
             key = event.key()
             KeySequence = QtGui.QKeySequence(key+int(event.modifiers()))
             if KeySequence == QtGui.QKeySequence("Ctrl+E"):
-                cmds.evalDeferred("from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll(globals())")
+                cmds.evalDeferred("from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()")
                 return True
 
         return False
@@ -434,13 +433,13 @@ def enhanceScriptEditor():
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecuteAll"))
                         -image "executeAll.png"
-                        -command "python \\"from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll(globals())\\""
+                        -command "python \\"from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()\\""
                         executeAllButton;
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
-                        -command "python \\"from mpdb import  __scriptEditorExecute;__scriptEditorExecute(globals())\\""
+                        -command "python \\"from mpdb import  __scriptEditorExecute;__scriptEditorExecute()\\""
                         executeButton;
                 }
 

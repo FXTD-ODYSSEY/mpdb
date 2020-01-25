@@ -143,14 +143,19 @@ class FilterTableWidget(QtWidgets.QWidget):
         self.horizontalHeader.sectionClicked.connect(self.on_view_horizontalHeader_sectionClicked)
 
         self.retranslateUi()
-        
+    
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.LanguageChange:
+            self.retranslateUi()
+        super(FilterTableWidget, self).changeEvent(event)
+
     def retranslateUi(self):
-        self.label.setText(QtWidgets.QApplication.translate("label", "正则过滤", None, -1))
+        self.label.setText(QtWidgets.QApplication.translate("label", "Regular Expression"))
 
         # NOTE 修改行名称
         header_list = [
-            QtWidgets.QApplication.translate("header", "变量名", None, -1),
-            QtWidgets.QApplication.translate("header", "变量值", None, -1),
+            QtWidgets.QApplication.translate("header", "Variable Name"),
+            QtWidgets.QApplication.translate("header", "Variable Value"),
         ]
         for column,label in enumerate(header_list):
             self.model.setHeaderData(column, QtCore.Qt.Horizontal,label)
@@ -261,11 +266,24 @@ class Debugger_Info(QtWidgets.QWidget):
         self.Filter_Table = FilterTableWidget()
         replaceWidget(self.Var_Table,self.Filter_Table)
 
+
         self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.Filter_Table)
         self.scope_toggle_anim = CollapsibleWidget.install(self.Scope_Toggle,self.Scope_List)
-
+        
         self.Scope_List.itemClicked.connect(self.itemClickEvent)
-    
+
+
+    def retranslateUi(self):
+        drop_icon = self.Var_Toggle.text()[:1]
+        self.Var_Toggle.setText(drop_icon + QtWidgets.QApplication.translate("info","Scope Variable"))
+        drop_icon = self.Scope_Toggle.text()[:1]
+        self.Scope_Toggle.setText(drop_icon + QtWidgets.QApplication.translate("info","Function Scope"))
+
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.LanguageChange:
+            self.retranslateUi()
+        super(Debugger_Info, self).changeEvent(event)
+
     def itemClickEvent(self,item):
         self.Filter_Table.clearItems()
         self.Filter_Table.addItems(item.locals)
@@ -313,21 +331,26 @@ class LinkPathLabel(QtWidgets.QLabel):
         self.path = path
         self.lineno = lineno
 
-        lineno_label = QtWidgets.QApplication.translate("path", "行数", None, -1)
+        lineno_label = QtWidgets.QApplication.translate("path", "Line Number")
         lineno = "<span>%s: (%s)</span>" % (lineno_label,lineno) if lineno else ""
-        path_label = QtWidgets.QApplication.translate("path", "路径", None, -1)
+        path_label = QtWidgets.QApplication.translate("path", "File Location")
 
         link = u"""
         <html><head/><body><center><span>{label}: </span><a href="{path}"><span style=" text-decoration: underline; color:{color};">{path}</span></a> {lineno}</center></body></html>
         """.format(label=path_label,path=path,color=self.color,lineno=lineno)
         super(LinkPathLabel,self).setText(link)
 
+    def changeEvent(self, event):
+        if event.type() == QtCore.QEvent.LanguageChange:
+            self.setText(self.path,self.lineno)
+        super(LinkPathLabel, self).changeEvent(event)
+
     def openPath(self):
         if os.path.exists(self.path):
             os.startfile(self.path)
         else:
-            title = QtWidgets.QApplication.translate("path", "警告", None, -1)
-            msg = QtWidgets.QApplication.translate("path", "路径不存在", None, -1)
+            title = QtWidgets.QApplication.translate("path", "warning")
+            msg = QtWidgets.QApplication.translate("path", "File Location not exist")
             QtWidgets.QMessageBox.warning(self,title,msg)
 
 

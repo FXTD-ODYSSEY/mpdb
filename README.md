@@ -16,6 +16,10 @@ Maya python Debugger Tool
 - [x]  ~~中断执行添加鼠标中键实现跳过断点完成代码执行~~
 - [x]  ~~数据接入到 Panel 上~~
 - [x]  ~~点击 listwidget 的 item 切换 locals 数据~~
+- [x]  ~~icon 添加 tooltip statusTip~~
+- [x]  ~~多国语言版本~~
+- [x]  ~~修复 exec 执行代码导致 Qt 变量不在全局的问题 | 使用 maya.utils.executeInMainThreadWithResult 解决~~
+- [x]  ~~右键菜单切换语言~~
 
 ## 遇到的问题
 

@@ -226,7 +226,7 @@ class Bdb:
 
     def set_continue(self):
         # Don't stop except at breakpoints or when finished
-        self._set_stopinfo(self.botframe, None, -1)
+        self._set_stopinfo(self.botframe)
         if not self.breaks:
             # no breakpoints; run without debugger overhead
             sys.settrace(None)
