@@ -28,34 +28,11 @@ from .utils import mayaWindow
 from .utils import mayaToQT
 from .toolbar import Debugger_UI
 
-def clearDebugQuit(func):
-    """clearDebugQuit Debug 跳出不报错
-    """
-    @wraps(func)
-    def wrapper(self, frame,*args, **kwargs):
-        try:
-            args = func(self, frame,*args, **kwargs)
-        except BdbQuit:
-            print "BdbQuit"
-            self.stop_here(frame)
-
-        return
-
-    return wrapper
-
 class MPDB(Pdb,object):
 
     def __init__(self,widget):
         super(MPDB,self).__init__()
         self.widget = widget
-
-    # @clearDebugQuit
-    # def dispatch_line(self, frame):
-    #     super(MPDB,self).dispatch_line(frame)
-
-    # @clearDebugQuit
-    # def trace_dispatch(self, frame, event, arg):
-    #     super(MPDB,self).trace_dispatch(frame, event, arg)
 
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
@@ -112,18 +89,30 @@ class MPDB(Pdb,object):
 
         Scope_List = panel.info_panel.Scope_List
         Scope_List.clear()
-        for stack,lineno in self.stack[2:]:
+        
+        stack_list = self.stack if int(cmds.about(v=1)) > 2017 else self.stack[2:]
+        for stack,lineno in stack_list:
             filename = stack.f_code.co_filename
-            panel.info_panel.Scope_List.addItem("%s(%s)" % (filename,lineno))
+            item = QtWidgets.QListWidgetItem("%s(%s)" % (filename,lineno))
+            item.locals = stack.f_locals
+            panel.info_panel.Scope_List.addItem(item)
 
+
+            
 def install():
     import mpdb
-    mpdb.debugger = mpdb.Debugger_UI()
-    mpdb.debugger_ui = mpdb.debugger.mayaShow()
+    MPDB_UI = Debugger_UI.windowName
+    if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
+        mpdb.debugger = mpdb.Debugger_UI()
+        mpdb.debugger_ui = mpdb.debugger.mayaShow()
+    else:
+        title = QtWidgets.QApplication.translate("warn", "警告", None, -1)
+        msg = QtWidgets.QApplication.translate("warn", "Debugger UI 已经安装！", None, -1)
+        QtWidgets.QMessageBox.warning(mayaWindow(),title,msg)
 
     
 def set_trace():
-    MPDB_UI = "MPDB_DEBUGGER_UI"
+    MPDB_UI = Debugger_UI.windowName
     if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
         title = QtWidgets.QApplication.translate("error", "错误", None, -1)
         msg = QtWidgets.QApplication.translate("error", "找不到 Debugger UI , 请尝试重装！", None, -1)

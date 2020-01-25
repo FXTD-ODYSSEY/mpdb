@@ -41,3 +41,4 @@ from scriptEditor import __reporterSetText
 from toolbar import Debugger_UI
 from panel import Debugger_Panel
 from codeEditor import CodeEditor
+

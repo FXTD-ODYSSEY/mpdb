@@ -11,8 +11,9 @@ import os
 import sys
 import time
 from textwrap import dedent
-from functools import partial
 from functools import wraps
+from functools import partial
+
 import toolbar_rc
 
 from .utils import createUIComponentToolBar
@@ -22,6 +23,8 @@ from .utils import traverseChildren
 from .utils import mayaToQT
 
 from .scriptEditor import enhanceScriptEditor
+
+from .panel import Debugger_Panel
 
 from PySide2 import QtGui
 from PySide2 import QtCore
@@ -35,7 +38,6 @@ from maya import cmds
 from maya import mel
 from maya import OpenMayaUI
 
-from .panel import Debugger_Panel
 
 DIR = os.path.dirname(__file__)
 
@@ -109,10 +111,12 @@ class MiddleClickSignal(QtCore.QObject):
         return False
 
 class Debugger_UI(QtWidgets.QWidget):
+
+    windowName = "MPDB_Debugger_UI"
+
     def __init__(self):
         super(Debugger_UI,self).__init__()
 
-        self.windowName = "MPDB_DEBUGGER_UI"
         self.debug_continue_state   = False
         self.debug_step_over_state  = False
         self.debug_step_into_state  = False
@@ -233,16 +237,7 @@ class Debugger_UI(QtWidgets.QWidget):
         
     @setDebugIcon
     def breakpoint(self,MPDB,frame):
-        # curr = time.time()
-
         while True:
-            # elapsed = abs(curr - time.time())
-            # # print elapsed
-            
-            # if elapsed > 3:
-            #     print "run out of time"
-            #     return "q"
-
             if self.debug_continue_state  :
                 self.debug_continue_state  = False
                 return "c"
@@ -278,12 +273,17 @@ class Debugger_UI(QtWidgets.QWidget):
             maya.utils.processIdleEvents()
     
     def closeEvent(self,event):
+        if self.debug_icon.isEnabled():
+            self.debug_cancel_state = True
+            
         if cmds.workspaceControl(self.windowName,q=1,ex=1):
             cmds.deleteUI(self.windowName)
 
         panel_name = self.panel.windowName
         if cmds.window(panel_name,q=1,ex=1):
             cmds.deleteUI(panel_name)
+
+        
 
     def mayaShow(self):
         name = self.windowName

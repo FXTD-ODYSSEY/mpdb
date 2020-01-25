@@ -106,10 +106,10 @@ class FilterTableWidget(QtWidgets.QWidget):
     """
     def __init__(self, parent=None):
         super(FilterTableWidget, self).__init__(parent)
-        self.lineEdit       = QtWidgets.QLineEdit(self)
-        self.view           = QtWidgets.QTableView(self)
-        self.comboBox       = QtWidgets.QComboBox(self)
-        self.label          = QtWidgets.QLabel(self)
+        self.lineEdit = QtWidgets.QLineEdit(self)
+        self.view     = QtWidgets.QTableView(self)
+        self.comboBox = QtWidgets.QComboBox(self)
+        self.label    = QtWidgets.QLabel(self)
 
         # NOTE 延长Header
         self.view.horizontalHeader().setStretchLastSection(True)            
@@ -258,26 +258,24 @@ class Debugger_Info(QtWidgets.QWidget):
         ui_path = os.path.join(DIR,"ui","debugVar.ui")
         loadUi(ui_path,self)
         
-        self.filter_table = FilterTableWidget()
+        self.Filter_Table = FilterTableWidget()
+        replaceWidget(self.Var_Table,self.Filter_Table)
 
-        # TODO test code
-        data = {
-            "a":'1',
-            "b":2,
-            "c":self.filter_table
-        }
-        self.addItems(data)
-
-        replaceWidget(self.Var_Table,self.filter_table)
-
-        self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.filter_table)
+        self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.Filter_Table)
         self.scope_toggle_anim = CollapsibleWidget.install(self.Scope_Toggle,self.Scope_List)
+
+        self.Scope_List.itemClicked.connect(self.itemClickEvent)
     
+    def itemClickEvent(self,item):
+        self.Filter_Table.clearItems()
+        self.Filter_Table.addItems(item.locals)
+        # self.Filter_Table.lineEdit.clear()
+
     def addItems(self,data):
-        self.filter_table.addItems(data)
+        self.Filter_Table.addItems(data)
 
     def clear(self):
-        self.filter_table.clearItems()
+        self.Filter_Table.clearItems()
 
     def mayaShow(self):
         return mayaShow(self,"MPDB_Info")
@@ -337,6 +335,7 @@ class Debugger_Panel(QtWidgets.QWidget):
     def __init__(self,toolbar):
         super(Debugger_Panel,self).__init__()
         self.windowName = "MPDB_Panel_UI"
+        self.setWindowTitle(self.windowName)
         self.toolbar = toolbar
 
         self.info_panel = Debugger_Info()

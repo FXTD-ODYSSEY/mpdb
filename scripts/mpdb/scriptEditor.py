@@ -427,7 +427,7 @@ def enhanceScriptEditor():
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
-                        -command "print \\"execute\\""
+                        -command "handleScriptEditorAction \\"execute\\""
                         executeButton;
                 }else{
                     iconTextButton 
