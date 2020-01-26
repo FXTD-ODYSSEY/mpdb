@@ -17,12 +17,13 @@ Maya python Debugger Tool
 - [x]  ~~数据接入到 Panel 上~~
 - [x]  ~~点击 listwidget 的 item 切换 locals 数据~~
 - [x]  ~~icon 添加 tooltip statusTip~~
-- [x]  ~~修复 exec 执行代码导致 Qt 变量不在全局的问题 | 使用 maya.utils.executeInMainThreadWithResult 解决~~
+- [x]  ~~修复 exec 执行代码导致 Qt 变量不在全局的问题~~ | 使用 maya.utils.executeInMainThreadWithResult 解决
 - [x]  ~~多国语言版本~~
 - [x]  ~~右键菜单切换语言~~
 - [x]  ~~窗口名称多语言~~
-- [ ]  通过 Qt 获取系统语言
-- [ ]  变量调试 修改功能
+- [x]  ~~通过 Qt 获取系统语言~~
+- [x]  ~~变量调试 修改功能~~
+- [x]  ~~pdb 模式刷新面板~~ | 重写 default 函数添加更新 locals
 - [ ]  代码显示 gotoline 尝试
 - [ ]  弄一个 release 分支 在 github 上发布
 

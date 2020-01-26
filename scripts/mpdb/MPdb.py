@@ -9,13 +9,10 @@ __date__ = '2020-01-04 20:42:11'
 """
 import os
 import sys
-import time
 from pdb import Pdb
-from textwrap import dedent
 
 import maya
 from maya import cmds
-from maya import mel
 
 from Qt import QtGui
 from Qt import QtCore
@@ -33,7 +30,9 @@ class MPDB(Pdb,object):
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
         # NOTE 完成调试 跳过 Debug 模式
-        if "<string>" == frame.f_code.co_filename:
+        stack_list = self.stack if int(cmds.about(v=1)) > 2017 else self.stack[2:]
+        if not stack_list or "__exception__" in frame.f_locals:
+            self.onecmd("disable")
             self.onecmd("c")
             self.forget()
             return
@@ -47,17 +46,7 @@ class MPDB(Pdb,object):
             if self.cmdqueue:
                 line = self.cmdqueue.pop(0)
             else:
-                if self.use_rawinput:
-                    line = self.widget.breakpoint(self,frame)
-                else:
-                    self.stdout.write(self.prompt)
-                    self.stdout.flush()
-                    line = self.stdin.readline()
-                    if not len(line):
-                        line = 'EOF'
-                    else:
-                        line = line.rstrip('\r\n')
-
+                line = self.widget.breakpoint(self,frame)
       
             line = self.precmd(line)
             stop = self.onecmd(line)
@@ -73,25 +62,30 @@ class MPDB(Pdb,object):
         panel.info_panel.clear()
         panel.info_panel.Scope_List.clear()
 
-    def updatePanel(self):
+    def updatePanel(self,f_locals=None):
         filename = self.curframe.f_code.co_filename
         lineno = self.curframe.f_lineno
-        var_data = self.curframe.f_locals
-        panel = self.widget.panel
+        var_data = f_locals if f_locals else self.curframe_locals
 
+        # NOTE 代码显示
         if os.path.exists(filename):
-            with open(filename,'r') as f:
-                code = f.read()
+            try:
+                with open(filename,'r') as f:
+                    code = f.read()
+            except:
+                code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
         else:
             code = ""
         
         # NOTE 更新路径和代码
+        panel = self.widget.panel
         panel.link.setText(filename,lineno)
         panel.editor.setPlainText(code)
         panel.editor.paintLine(lineno)
         panel.info_panel.clear()
         panel.info_panel.addItems(var_data)
-
+        
+        # NOTE 更新函数域
         Scope_List = panel.info_panel.Scope_List
         Scope_List.clear()
         
@@ -99,9 +93,42 @@ class MPDB(Pdb,object):
         for stack,lineno in stack_list:
             filename = stack.f_code.co_filename
             item = QtWidgets.QListWidgetItem("%s(%s)" % (filename,lineno))
+            item.frame = stack
             item.locals = stack.f_locals
-            panel.info_panel.Scope_List.addItem(item)
-            
+            Scope_List.addItem(item)
+
+        # NOTE 选择当前函数域最后的 item
+        if stack_list:
+            Scope_List.setCurrentItem(item)
+
+    def default(self, line):
+        if line[:1] == '!': line = line[1:]
+        locals = self.curframe_locals
+        globals = self.curframe.f_globals
+        try:
+            code = compile(line + '\n', '<stdin>', 'single')
+            save_stdout = sys.stdout
+            save_stdin = sys.stdin
+            save_displayhook = sys.displayhook
+            try:
+                sys.stdin = self.stdin
+                sys.stdout = self.stdout
+                sys.displayhook = self.displayhook
+                exec code in globals, locals
+            finally:
+                sys.stdout = save_stdout
+                sys.stdin = save_stdin
+                sys.displayhook = save_displayhook
+        except:
+            t, v = sys.exc_info()[:2]
+            if type(t) == type(''):
+                exc_type_name = t
+            else: exc_type_name = t.__name__
+            print >>self.stdout, '***', exc_type_name + ':', v
+        
+        # NOTE pdb输入修改 更新面板
+        self.updatePanel(locals)
+        
 def install():
     import mpdb
     MPDB_UI = Debugger_UI.windowName

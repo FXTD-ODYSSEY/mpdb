@@ -151,13 +151,14 @@ class Debugger_UI(QtWidgets.QWidget):
     def __init__(self):
         super(Debugger_UI,self).__init__()
 
+        self.__lang_list = {}
         self.debug_continue_state   = False
         self.debug_step_over_state  = False
         self.debug_step_into_state  = False
         self.debug_step_out_state   = False
         self.debug_cancel_state     = False
-        self.debug_pdb_state        = False
         self.debug_cancel_run_state = False
+        self.debug_pdb_state        = False
         
 
         # NOTE 添加 Ctrl + E 执行快捷键 | 修复 Maya 2017 崩溃问题
@@ -202,26 +203,20 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_setting.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.debug_setting.customContextMenuRequested.connect(self.showSettingMenu)
 
+        # NOTE 初始化 setting 右键菜单
         self.setting_menu = QtWidgets.QMenu(self)
-
         self.i18n_seperator = Divider()
         action = QtWidgets.QWidgetAction(self)
         action.setDefaultWidget(self.i18n_seperator)
         self.setting_menu.addAction(action)
 
-        # sep = self.setting_menu.addSeparator()
-        # sep.setText(i18n_mode)
-        chinese_action = QtWidgets.QAction(u"中文", self)
-        english_action = QtWidgets.QAction(u"English", self)
-
-        chinese_qm = os.path.join(DIR,"i18n","zh_CN.qm")
-        chinese_action.triggered.connect(partial(self.i18nInstall,chinese_qm))
-        english_action.triggered.connect(partial(self.i18nInstall,None))
-        self.setting_menu.addAction(chinese_action)
-        self.setting_menu.addAction(english_action)
+        self.localeList = {
+            "zh_CN":u"中文",
+            "en_US":u"English",
+        }
 
         self.retranslateUi()
-        
+    
     def retranslateUi(self):
         # NOTE pdb 输入框
         self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb Input Mode")
@@ -258,6 +253,27 @@ class Debugger_UI(QtWidgets.QWidget):
         if cmds.window(self.panel.windowName,q=1,ex=1):
             panel_name = QtWidgets.QApplication.translate("window", "Maya Debugger Panel")
             cmds.window(self.panel.windowName,e=1,title=panel_name)
+
+    @property
+    def localeList(self):
+        return self.__lang_list
+    
+    @localeList.setter
+    def localeList(self,value):
+        if type(value) != dict:
+            return
+        self.__lang_list = value
+        system_lang = QtCore.QLocale.system().name()
+        i18n_folder = os.path.join(DIR,"i18n")
+        for name,label in self.__lang_list.items():
+            action = QtWidgets.QAction(label, self)
+            qm_file = os.path.join(i18n_folder,"%s.qm" % name)
+            qm_file = qm_file if os.path.exists(qm_file) else None
+            action.triggered.connect(partial(self.i18nInstall,qm_file))
+            self.setting_menu.addAction(action)
+            # NOTE 判断系统语言进行注册
+            if system_lang == name:
+                self.i18nInstall(qm_file)
 
     def i18nInstall(self,qm_path):
         if qm_path and os.path.exists(qm_path):
@@ -369,7 +385,7 @@ class Debugger_UI(QtWidgets.QWidget):
 
             elif self.debug_cancel_state    :
                 self.debug_cancel_state    = False
-                return "q"
+                return "disable;;q"
 
             elif self.debug_cancel_run_state    :
                 self.debug_cancel_run_state    = False

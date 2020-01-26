@@ -33,10 +33,12 @@ DIR = os.path.dirname(__file__)
 class LineEditDelegate(QtWidgets.QStyledItemDelegate):
 
     moveCurrentCellBy = QtCore.Signal(int, int)
+    varaibleModified = QtCore.Signal(QtWidgets.QStyledItemDelegate,str)
 
     def __init__(self, parent=None):
         super(LineEditDelegate, self).__init__(parent)
-
+        self.modified = True
+        
     def createEditor(self, parent, option, index):
         self.editor = QtWidgets.QLineEdit(parent)
         self.editor.setFrame(False)
@@ -71,8 +73,13 @@ class LineEditDelegate(QtWidgets.QStyledItemDelegate):
             if event.type() == QtCore.QEvent.KeyPress:
 
                 if event.key() in (QtCore.Qt.Key_Return, QtCore.Qt.Key_Enter):
-                    print "press enter"
-                    self.commitData.emit(self.editor)
+                    # NOTE 变量修改
+                    self.varaibleModified.emit(self,self.editor.text())
+                    if self.modified:
+                        self.commitData.emit(self.editor)
+                    else:
+                        self.modified = True
+
                     self.closeEditor.emit(self.editor, QtWidgets.QAbstractItemDelegate.NoHint)
 
                 if self.editor.hasFocus():
@@ -97,7 +104,6 @@ class LineEditDelegate(QtWidgets.QStyledItemDelegate):
                     self.moveCurrentCellBy.emit(row, column)
                     return True
 
-            
         return False   
 
 class FilterTableWidget(QtWidgets.QWidget):
@@ -118,8 +124,8 @@ class FilterTableWidget(QtWidgets.QWidget):
         self.view.setTextElideMode(QtCore.Qt.ElideMiddle)
         self.view.resizeRowsToContents()
 
-        delegate = LineEditDelegate()
-        self.view.setItemDelegate(delegate)
+        self.delegate = LineEditDelegate()
+        self.view.setItemDelegate(self.delegate)
 
         self.gridLayout = QtWidgets.QGridLayout(self)
         self.gridLayout.setContentsMargins(0,0,0,0)
@@ -266,12 +272,39 @@ class Debugger_Info(QtWidgets.QWidget):
         self.Filter_Table = FilterTableWidget()
         replaceWidget(self.Var_Table,self.Filter_Table)
 
-
         self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.Filter_Table)
         self.scope_toggle_anim = CollapsibleWidget.install(self.Scope_Toggle,self.Scope_List)
         
         self.Scope_List.itemClicked.connect(self.itemClickEvent)
 
+        self.Filter_Table.delegate.varaibleModified.connect(self.modifyScopeEvent)
+
+    def modifyScopeEvent(self,delegate,val):
+        delegate.modified = True
+        model_index = self.Filter_Table.view.currentIndex()
+        column = model_index.column()
+        row = model_index.row()
+        model = self.Filter_Table.model
+        var_name = model.item(row, column-1).text()
+        item = self.Scope_List.currentItem()
+
+        globals = item.frame.f_globals
+        locals = item.frame.f_locals
+        try:
+            code = "%s = %s\n" % (var_name,val)
+            code = compile(code, '<stdin>', 'single')
+            exec code in globals, locals
+
+            val = item.locals[var_name]
+            val = '"%s"' % val if type(val) == str else str(val)
+            delegate.editor.setText(val)
+        except:
+            t, v = sys.exc_info()[:2]
+            if type(t) == type(''):
+                exc_type_name = t
+            else: exc_type_name = t.__name__
+            print >>sys.stdout, '***', exc_type_name + ':', v
+            delegate.modified = False
 
     def retranslateUi(self):
         drop_icon = self.Var_Toggle.text()[:1]
@@ -385,12 +418,13 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def mayaShow(self):
-        self.show()
         ptr = mayaShow(self,self.windowName)
+        self.show()
         ptr.destroyed.connect(self.__close)
         return ptr
 
     def __close(self):
+        # NOTE 确保不会被 垃圾回收
         self.setParent(self.toolbar)
         self.hide()
 

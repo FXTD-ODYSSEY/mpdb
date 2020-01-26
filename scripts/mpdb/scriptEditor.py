@@ -33,7 +33,7 @@ def __reporterSetText(text):
     reporter.moveCursor(QtGui.QTextCursor.End) 
 
 # NOTE maya.utils.executeInMainThreadWithResult 这个方法无需获取 globals 函数，解决变量定义在当前文件scope下的问题
-# Done 将Maya的脚本编辑器的全部变量引入 https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+# // 将Maya的脚本编辑器的全部变量引入 https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
 def __scriptEditorExecuteAll():
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
