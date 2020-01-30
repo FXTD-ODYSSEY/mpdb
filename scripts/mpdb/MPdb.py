@@ -10,6 +10,7 @@ __date__ = '2020-01-04 20:42:11'
 import os
 import sys
 from pdb import Pdb
+from functools import wraps
 
 import maya
 from maya import cmds
@@ -21,21 +22,43 @@ from Qt import QtWidgets
 from .utils import mayaWindow
 from .toolbar import Debugger_UI
 
+def debugMode(func):
+    """debugMode Debug 装饰器
+    """
+    @wraps(func)
+    def wrapper(self,*args, **kwargs):
+        
+        args = func(self,*args, **kwargs)
+        self.forget()
+        self.clearPanel()
+        return args
+    return wrapper
+
 class MPDB(Pdb,object):
 
     def __init__(self,widget):
         super(MPDB,self).__init__()
         self.widget = widget
-
+        DIR = os.path.dirname(__file__)
+        self.py_list = [filename for filename in os.listdir(DIR) if filename.endswith(".py")]
+        
+    @debugMode
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
         # NOTE 完成调试 跳过 Debug 模式
         stack_list = self.stack if int(cmds.about(v=1)) > 2017 else self.stack[2:]
-        if not stack_list or "__exception__" in frame.f_locals:
-            self.onecmd("disable")
-            self.onecmd("c")
-            self.forget()
-            return
+        # if not stack_list or "__exception__" in frame.f_locals:
+        #     self.onecmd("disable")
+        #     self.onecmd("c")
+        #     return
+        
+        # # NOTE 过滤插件自身的 代码追踪
+        # filename = self.curframe.f_code.co_filename.strip()
+        # for py in self.py_list:
+        #     if r"mpdb" in filename and py in filename:
+        #         self.onecmd("u")
+        #         self.onecmd("c")
+        #         return
 
         self.print_stack_entry(self.stack[self.curindex])
 
@@ -51,8 +74,6 @@ class MPDB(Pdb,object):
             line = self.precmd(line)
             stop = self.onecmd(line)
 
-        self.forget()
-        self.clearPanel()
     
     def clearPanel(self):
         # NOTE 清空面板数据
@@ -75,7 +96,7 @@ class MPDB(Pdb,object):
             except:
                 code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
         else:
-            code = ""
+            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
         
         # NOTE 更新路径和代码
         panel = self.widget.panel
@@ -95,6 +116,7 @@ class MPDB(Pdb,object):
             item = QtWidgets.QListWidgetItem("%s(%s)" % (filename,lineno))
             item.frame = stack
             item.locals = stack.f_locals
+            item.globals = stack.f_globals
             Scope_List.addItem(item)
 
         # NOTE 选择当前函数域最后的 item
@@ -128,11 +150,15 @@ class MPDB(Pdb,object):
         
         # NOTE pdb输入修改 更新面板
         self.updatePanel(locals)
-        
+
 def install():
     import mpdb
     MPDB_UI = Debugger_UI.windowName
     if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
+        mpdb.debugger = mpdb.Debugger_UI()
+        mpdb.debugger_ui = mpdb.debugger.mayaShow()
+    elif not hasattr(mpdb,"debugger"):
+        cmds.deleteUI(MPDB_UI)
         mpdb.debugger = mpdb.Debugger_UI()
         mpdb.debugger_ui = mpdb.debugger.mayaShow()
     else:
@@ -152,6 +178,8 @@ def set_trace():
     elif not cmds.workspaceControl(MPDB_UI,q=1,vis=1):
         # NOTE 显示 Debugger
         cmds.workspaceControl(MPDB_UI,e=1,vis=1)
- 
+    
+    # NOTE 设置断点
     MPDB(mpdb.debugger).set_trace(sys._getframe().f_back)
+    # mpdb.MPDB(mpdb.debugger).set_trace(sys._getframe().f_back)
 

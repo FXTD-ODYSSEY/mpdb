@@ -42,40 +42,40 @@ from maya import OpenMayaUI
 
 DIR = os.path.dirname(__file__)
 
-class OverLay(QtWidgets.QWidget):
-    """OverLay 红框Debug标记 暂时弃用"""
-    BorderColor     = QtGui.QColor(255, 0, 0, 255)     
-    BackgroundColor = QtGui.QColor(255, 255, 255, 0) 
+# class OverLay(QtWidgets.QWidget):
+#     """OverLay 红框Debug标记 暂时弃用"""
+#     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
+#     BackgroundColor = QtGui.QColor(255, 255, 255, 0) 
     
-    def __init__(self, *args, **kwargs):
-        QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
-        self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-        self.setWindowFlags(QtCore.Qt.WindowTransparentForInput|QtCore.Qt.FramelessWindowHint)
-        self.setFocusPolicy( QtCore.Qt.NoFocus )
-        self.hide()
-        # self.setEnabled(False)
+#     def __init__(self, *args, **kwargs):
+#         QtWidgets.QWidget.__init__(self, *args, **kwargs)
+#         self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
+#         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
+#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput|QtCore.Qt.FramelessWindowHint)
+#         self.setFocusPolicy( QtCore.Qt.NoFocus )
+#         self.hide()
+#         # self.setEnabled(False)
 
-        self.setAutoFillBackground(True)
-        # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+#         self.setAutoFillBackground(True)
+#         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
 
-    def paintEvent(self, event):
+#     def paintEvent(self, event):
         
-        # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
-        painter = QtGui.QPainter(self)
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)   
+#         # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
+#         painter = QtGui.QPainter(self)
+#         painter.setRenderHint(QtGui.QPainter.Antialiasing)   
 
-        rectPath = QtGui.QPainterPath()                      
-        height = self.height() - 4                     
-        rect = QtCore.QRectF(2, 2, self.width()-4, height)
-        rectPath.addRoundedRect(rect, 15, 15)
-        painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-        painter.drawPath(rectPath)
-        painter.setBrush(self.BackgroundColor)
-        painter.drawRoundedRect(rect, 15, 15)
+#         rectPath = QtGui.QPainterPath()                      
+#         height = self.height() - 4                     
+#         rect = QtCore.QRectF(2, 2, self.width()-4, height)
+#         rectPath.addRoundedRect(rect, 15, 15)
+#         painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
+#         painter.drawPath(rectPath)
+#         painter.setBrush(self.BackgroundColor)
+#         painter.drawRoundedRect(rect, 15, 15)
 
-def setDebugIcon(func):
-    """setDebugIcon Debug 装饰器
+def setDebugMode(func):
+    """setDebugMode Debug 装饰器
     """
     @wraps(func)
     def wrapper(self,*args, **kwargs):
@@ -87,6 +87,7 @@ def setDebugIcon(func):
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
         main_win.setStyleSheet("")
+        print "return args: '%s'" % args
         return args
     return wrapper
 
@@ -134,8 +135,10 @@ class MiddleClickSignal(QtCore.QObject):
     """addExecuteShortcut 监听鼠标中键事件
     """
     middleClicked = QtCore.Signal()
-    def __init__(self):
+    def __init__(self,parent):
         super(MiddleClickSignal,self).__init__()
+        self.setParent(parent)
+        parent.installEventFilter(self)
         
     def eventFilter(self,reciever,event):
         if event.type() == QtCore.QEvent.Type.MouseButtonPress:
@@ -298,20 +301,17 @@ class Debugger_UI(QtWidgets.QWidget):
         cmdWnd = mayaToQT(cmdWndIcon)
 
         # NOTE 添加中键点击信号
-        self.scriptIcon_signal = MiddleClickSignal()
-        cmdWnd.installEventFilter(self.scriptIcon_signal)
+        self.scriptIcon_signal = MiddleClickSignal(cmdWnd)
         self.scriptIcon_signal.middleClicked.connect(self.mayaShow)
 
         return cmdWndIcon
     
     def setupDebugSettingMiddleClick(self):
-        self.Setting_signal = MiddleClickSignal()
-        self.debug_setting.installEventFilter(self.Setting_signal)
+        self.Setting_signal = MiddleClickSignal(self.debug_setting)
         self.Setting_signal.middleClicked.connect(partial(self.setPdb,True))
 
     def setupDebugCancelMiddleClick(self):
-        self.Cancel_signal = MiddleClickSignal()
-        self.debug_cancel.installEventFilter(self.Cancel_signal)
+        self.Cancel_signal = MiddleClickSignal(self.debug_cancel)
         self.Cancel_signal.middleClicked.connect(partial(self.setCancelRun,True))
 
     def openPanel(self):
@@ -364,9 +364,17 @@ class Debugger_UI(QtWidgets.QWidget):
                     image.setPixelColor(x, y, color)
         button.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
         
-    @setDebugIcon
+    @setDebugMode
     def breakpoint(self,MPDB,frame):
+        import time 
+        curr = time.time()
         while True:
+            elapsed = abs(time.time() - curr)
+            print elapsed
+            if elapsed > 2:
+                print "elpased"
+                return "q"
+
             if self.debug_continue_state  :
                 self.debug_continue_state  = False
                 return "c"
@@ -407,11 +415,11 @@ class Debugger_UI(QtWidgets.QWidget):
             self.debug_cancel_state = True
             
         if cmds.workspaceControl(self.windowName,q=1,ex=1):
-            cmds.deleteUI(self.windowName)
+            cmds.evalDeferred("cmds.deleteUI('%s')" % self.windowName)
 
         panel_name = self.panel.windowName
         if cmds.window(panel_name,q=1,ex=1):
-            cmds.deleteUI(panel_name)
+            cmds.evalDeferred("cmds.deleteUI('%s')" % panel_name)
 
     def mayaShow(self):
         name = self.windowName

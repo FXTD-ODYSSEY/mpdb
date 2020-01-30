@@ -43,6 +43,7 @@ class LineEditDelegate(QtWidgets.QStyledItemDelegate):
         self.editor = QtWidgets.QLineEdit(parent)
         self.editor.setFrame(False)
         self.editor.installEventFilter(self)
+        self.editor.modelIndex = index
         return self.editor
 
     def setEditorData(self, editor, index):
@@ -281,15 +282,17 @@ class Debugger_Info(QtWidgets.QWidget):
 
     def modifyScopeEvent(self,delegate,val):
         delegate.modified = True
-        model_index = self.Filter_Table.view.currentIndex()
-        column = model_index.column()
+        model_index = delegate.editor.modelIndex
         row = model_index.row()
+        v_model = self.Filter_Table.view.verticalHeader().model()
+        row_label = v_model.headerData(row, QtCore.Qt.Vertical) 
+
         model = self.Filter_Table.model
-        var_name = model.item(row, column-1).text()
+        var_name = model.item(row_label-1, 0).text()
         item = self.Scope_List.currentItem()
 
-        globals = item.frame.f_globals
-        locals = item.frame.f_locals
+        globals = item.globals
+        locals = item.locals
         try:
             code = "%s = %s\n" % (var_name,val)
             code = compile(code, '<stdin>', 'single')

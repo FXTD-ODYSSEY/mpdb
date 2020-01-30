@@ -4,12 +4,12 @@
 <context>
     <name>error</name>
     <message>
-        <location filename="../MPDB.py" line="129"/>
+        <location filename="../MPDB.py" line="165"/>
         <source>error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../MPDB.py" line="130"/>
+        <location filename="../MPDB.py" line="166"/>
         <source>Connot find Debugger UI,Please try to reinstall the plugin</source>
         <translation>找不到 Debugger UI , 请尝试重装</translation>
     </message>
@@ -71,12 +71,12 @@
 <context>
     <name>info</name>
     <message>
-        <location filename="../panel.py" line="324"/>
+        <location filename="../panel.py" line="311"/>
         <source>Scope Variable</source>
         <translation>域变量</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="326"/>
+        <location filename="../panel.py" line="313"/>
         <source>Function Scope</source>
         <translation>函数域</translation>
     </message>
@@ -92,22 +92,22 @@
 <context>
     <name>path</name>
     <message>
-        <location filename="../panel.py" line="381"/>
+        <location filename="../panel.py" line="368"/>
         <source>Line Number</source>
         <translation>行数</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="384"/>
+        <location filename="../panel.py" line="371"/>
         <source>File Location</source>
         <translation>文件路径</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="400"/>
+        <location filename="../panel.py" line="387"/>
         <source>warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="401"/>
+        <location filename="../panel.py" line="388"/>
         <source>File Location not exist</source>
         <translation>文件路径不存在</translation>
     </message>
@@ -128,20 +128,25 @@
 <context>
     <name>reading</name>
     <message>
-        <location filename="../MPDB.py" line="87"/>
+        <location filename="../MPDB.py" line="88"/>
         <source>read fail</source>
         <translation>读取失败</translation>
+    </message>
+    <message>
+        <location filename="../MPDB.py" line="90"/>
+        <source>file not exists</source>
+        <translation>文件不存在</translation>
     </message>
 </context>
 <context>
     <name>warn</name>
     <message>
-        <location filename="../MPDB.py" line="120"/>
+        <location filename="../MPDB.py" line="156"/>
         <source>warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../MPDB.py" line="121"/>
+        <location filename="../MPDB.py" line="157"/>
         <source>Debugger UI already install</source>
         <translation>Debugger UI 已经安装</translation>
     </message>

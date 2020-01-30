@@ -231,6 +231,7 @@ class Highlighter(QSyntaxHighlighter):
 
 
 class QLineNumberArea(QWidget):
+
     def __init__(self, parent = None):
         super(QLineNumberArea, self).__init__(parent)
         self.fixWidth = 10
@@ -243,6 +244,19 @@ class QLineNumberArea(QWidget):
         self.editor.blockCountChanged.connect(self.update_width)
         self.editor.updateRequest.connect(self.update_on_scroll)
         self.update_width('1')
+
+    # TODO 右键设置断点 运行到该行
+    #     # NOTE 设置右键菜单
+    #     self.menu = QtWidgets.QMenu(self)
+    #     goto_action = QtWidgets.QAction('Goto Line', self)
+    #     goto_action.triggered.connect(self.gotoLine)
+    #     self.menu.addAction(goto_action)
+    # def gotoLine(self):
+    #     self.editor.paintLine(self.current_line)
+    #     print "gotoLine",self.current_line
+
+    # def contextMenuEvent(self, event):
+    #     self.menu.popup(QtGui.QCursor.pos())
 
     def paintLine(self,num):
         self.paintLineNum = num
@@ -300,19 +314,6 @@ class QLineNumberArea(QWidget):
                 block = block.next()
 
             painter.end()
-    
-    def contextMenuEvent(self, event):
-        self.menu = QtWidgets.QMenu(self)
-        goto_action = QtWidgets.QAction('Goto Line', self)
-
-        goto_action.triggered.connect(self.gotoLine)
-        self.menu.addAction(goto_action)
-        pos = QtGui.QCursor.pos()
-        self.menu.popup(pos)
-
-    def gotoLine(self):
-        self.editor.paintLine(self.current_line)
-        print "gotoLine",self.current_line
 
     def mousePressEvent(self,event):
         self.current_line = self.currentCursorLineNum()

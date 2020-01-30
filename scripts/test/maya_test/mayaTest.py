@@ -17,7 +17,7 @@ def main():
 
     c = add(a,b)
 
-    # mpdb.set_trace()
+    mpdb.set_trace()
     d = mul(c,b)
 
     print (a,b,c,d)

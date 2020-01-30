@@ -19,6 +19,19 @@ from .utils import mayaToQT
 
 from bdb import BdbQuit
 
+def __getRunningCode():
+    import mpdb
+    gCommandExecuterTabs = mel.eval("$tmep = $gCommandExecuterTabs")
+    tab = cmds.tabLayout(gCommandExecuterTabs,q=1,selectTab=1)
+    executers = cmds.formLayout(tab,q=1,childArray=1)
+
+    # NOTE 异常处理 debugger 已经 C++ 删除的情况
+    try:
+        if executers and not mpdb.debugger.debug_icon.isEnabled():
+            mpdb.running_code = cmds.cmdScrollFieldExecuter(executers[0],q=1,text=1)
+    except:
+        pass
+
 def __reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
     for widget in mapp.topLevelWidgets():
@@ -47,11 +60,13 @@ def __scriptEditorExecuteAll():
         try:
             maya.utils.executeInMainThreadWithResult(text)
         except BdbQuit:
+            # NOTE 过滤 debug quit 错误
             pass
     elif source == "mel":
         mel.eval(text)
 
 def __scriptEditorExecute():
+    print "__scriptEditorExecute"
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     
     selected_text = cmds.cmdScrollFieldExecuter(executer,q=1,selectedText=1)
@@ -70,7 +85,11 @@ def __scriptEditorExecute():
         
         for char in ["\n",".","\t","="," "]:
             if char in text.strip():
-                maya.utils.executeInMainThreadWithResult(text)
+                try:
+                    maya.utils.executeInMainThreadWithResult(text)
+                except BdbQuit:
+                    # NOTE 过滤 debug quit 错误
+                    pass
                 break
         else:
             maya.utils.executeInMainThreadWithResult("import pprint;pprint.pprint(%s)" % text)
@@ -95,6 +114,7 @@ class AddExecuteShortcut(QtCore.QObject):
             key = event.key()
             KeySequence = QtGui.QKeySequence(key+int(event.modifiers()))
             if KeySequence == QtGui.QKeySequence("Ctrl+E"):
+                print "Ctrl+E"
                 cmds.evalDeferred("from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()")
                 return True
 
