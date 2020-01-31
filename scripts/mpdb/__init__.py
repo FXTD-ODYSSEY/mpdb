@@ -31,15 +31,18 @@ import MPDB
 reload(MPDB)
 
 
+from MPDB import MPDB
 from MPDB import install
 from MPDB import set_trace
-from scriptEditor import __scriptEditorEventFilter
-from scriptEditor import __scriptEditorExecuteAll
-from scriptEditor import __scriptEditorExecute
-from scriptEditor import __reporterSetText
-from scriptEditor import __getRunningCode
+from scriptEditor import scriptEditorEventFilter
+from scriptEditor import scriptEditorExecuteAll
+from scriptEditor import scriptEditorExecute
+from scriptEditor import reporterSetText
 
 from toolbar import Debugger_UI
 from panel import Debugger_Panel
 from codeEditor import CodeEditor
-from MPDB import MPDB
+
+quitting = False
+f_globals = globals()
+f_locals = locals()

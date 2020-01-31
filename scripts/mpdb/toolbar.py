@@ -87,7 +87,6 @@ def setDebugMode(func):
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
         main_win.setStyleSheet("")
-        print "return args: '%s'" % args
         return args
     return wrapper
 
@@ -229,7 +228,7 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_step_over_tip = QtWidgets.QApplication.translate("icon", "Debug Step Over")
         self.debug_step_into_tip = QtWidgets.QApplication.translate("icon", "Debug Step Into")
         self.debug_step_out_tip = QtWidgets.QApplication.translate("icon", "Debug Step Out")
-        self.debug_cancel_tip = QtWidgets.QApplication.translate("icon", "LMB Stop Debug | MMB Ignore Breakpoint")
+        self.debug_cancel_tip = QtWidgets.QApplication.translate("icon", "LMB Stop Debug | MMB Ignore Breakpoints")
         self.debug_setting_tip = QtWidgets.QApplication.translate("icon", "LMB Open Debug Panel | MMB pdb Input Mode | RMB Switch Language")
 
         self.debug_continue.setStatusTip(self.debug_continue_tip)
@@ -366,14 +365,15 @@ class Debugger_UI(QtWidgets.QWidget):
         
     @setDebugMode
     def breakpoint(self,MPDB,frame):
-        import time 
-        curr = time.time()
+        # import time 
+        # curr = time.time()
+        # while True:
+            # elapsed = abs(time.time() - curr)
+            # print elapsed
+            # if elapsed > 3:
+            #     print "elpased"
+            #     return "q"
         while True:
-            elapsed = abs(time.time() - curr)
-            print elapsed
-            if elapsed > 2:
-                print "elpased"
-                return "q"
 
             if self.debug_continue_state  :
                 self.debug_continue_state  = False
@@ -393,10 +393,12 @@ class Debugger_UI(QtWidgets.QWidget):
 
             elif self.debug_cancel_state    :
                 self.debug_cancel_state    = False
-                return "disable;;q"
+                return "q"
 
             elif self.debug_cancel_run_state    :
                 self.debug_cancel_run_state    = False
+                import mpdb
+                mpdb.quitting = True
                 return "disable;;c"
 
             elif self.debug_pdb_state    :

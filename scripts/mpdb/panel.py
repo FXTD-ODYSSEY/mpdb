@@ -26,7 +26,7 @@ from maya import cmds
 from maya import mel
 from maya import OpenMayaUI
 
-from codeEditor import  CodeEditor
+from codeEditor import CodeEditor
 
 DIR = os.path.dirname(__file__)
 
@@ -428,8 +428,11 @@ class Debugger_Panel(QtWidgets.QWidget):
 
     def __close(self):
         # NOTE 确保不会被 垃圾回收
-        self.setParent(self.toolbar)
-        self.hide()
+        try:
+            self.setParent(self.toolbar)
+            self.hide()
+        except:
+            self.setParent(None)
 
 # import sys
 # MODULE = r"F:\repo\mpdb\scripts"

@@ -10,6 +10,7 @@ __date__ = '2020-01-04 20:42:11'
 import os
 import sys
 from pdb import Pdb
+from bdb import BdbQuit
 from functools import wraps
 
 import maya
@@ -34,6 +35,31 @@ def debugMode(func):
         return args
     return wrapper
 
+
+def get_stack(f):
+    stack = []
+    print "================",[f]
+    while f is not None:
+        stack.append(f)
+        filename = f.f_code.co_filename
+        lineno = f.f_lineno
+        print "file",filename,lineno
+        f = f.f_back
+    return stack 
+
+def ignoreBdbQuitError(func):
+    """debugMode 过滤 BdbQuit 装饰器
+    """
+    @wraps(func)
+    def wrapper(self, frame):
+        try:
+            return func(self, frame)
+        except BdbQuit:
+            # get_stack(frame) 
+            # NOTE https://stackoverflow.com/questions/19782075/how-to-stop-terminate-a-python-script-from-running
+            sys.exit()
+    return wrapper
+
 class MPDB(Pdb,object):
 
     def __init__(self,widget):
@@ -47,18 +73,17 @@ class MPDB(Pdb,object):
         self.setup(frame, traceback)
         # NOTE 完成调试 跳过 Debug 模式
         stack_list = self.stack if int(cmds.about(v=1)) > 2017 else self.stack[2:]
-        # if not stack_list or "__exception__" in frame.f_locals:
-        #     self.onecmd("disable")
-        #     self.onecmd("c")
-        #     return
+        if not stack_list or "__exception__" in frame.f_locals:
+            self.onecmd("c")
+            return
         
-        # # NOTE 过滤插件自身的 代码追踪
-        # filename = self.curframe.f_code.co_filename.strip()
-        # for py in self.py_list:
-        #     if r"mpdb" in filename and py in filename:
-        #         self.onecmd("u")
-        #         self.onecmd("c")
-        #         return
+        # NOTE 过滤插件自身的 代码追踪
+        filename = self.curframe.f_code.co_filename.strip()
+        for py in self.py_list:
+            if r"mpdb" in filename and py in filename:
+                self.onecmd("u")
+                self.onecmd("c")
+                return
 
         self.print_stack_entry(self.stack[self.curindex])
 
@@ -150,6 +175,19 @@ class MPDB(Pdb,object):
         
         # NOTE pdb输入修改 更新面板
         self.updatePanel(locals)
+    
+    def do_quitIgnore(self, arg):
+        self._user_requested_quit = 1
+        self.set_quit()
+        return 1
+
+    @ignoreBdbQuitError
+    def dispatch_line(self, frame):
+        return super(MPDB,self).dispatch_line(frame)
+
+    # @ignoreBdbQuitError
+    # def trace_dispatch(self, frame, event, arg):
+    #     return super(MPDB,self).trace_dispatch(frame, event, arg)
 
 def install():
     import mpdb
@@ -166,9 +204,12 @@ def install():
         msg = QtWidgets.QApplication.translate("warn", "Debugger UI already install")
         QtWidgets.QMessageBox.warning(mayaWindow(),title,msg)
 
-    
 def set_trace():
     import mpdb
+    # NOTE 过滤 退出状态 和 Debug 状态
+    if mpdb.quitting or mpdb.debugger.debug_icon.isEnabled():
+        return
+
     MPDB_UI = Debugger_UI.windowName
     if not hasattr(mpdb,"debugger") or not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
         title = QtWidgets.QApplication.translate("error", "error")
@@ -181,5 +222,4 @@ def set_trace():
     
     # NOTE 设置断点
     MPDB(mpdb.debugger).set_trace(sys._getframe().f_back)
-    # mpdb.MPDB(mpdb.debugger).set_trace(sys._getframe().f_back)
 

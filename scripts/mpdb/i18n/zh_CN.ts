@@ -4,12 +4,12 @@
 <context>
     <name>error</name>
     <message>
-        <location filename="../MPDB.py" line="165"/>
+        <location filename="../MPDB.py" line="215"/>
         <source>error</source>
         <translation>错误</translation>
     </message>
     <message>
-        <location filename="../MPDB.py" line="166"/>
+        <location filename="../MPDB.py" line="216"/>
         <source>Connot find Debugger UI,Please try to reinstall the plugin</source>
         <translation>找不到 Debugger UI , 请尝试重装</translation>
     </message>
@@ -17,12 +17,12 @@
 <context>
     <name>header</name>
     <message>
-        <location filename="../panel.py" line="163"/>
+        <location filename="../panel.py" line="164"/>
         <source>Variable Name</source>
         <translation>变量名</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="164"/>
+        <location filename="../panel.py" line="165"/>
         <source>Variable Value</source>
         <translation>变量值</translation>
     </message>
@@ -30,7 +30,7 @@
 <context>
     <name>i18n</name>
     <message>
-        <location filename="../toolbar.py" line="246"/>
+        <location filename="../toolbar.py" line="248"/>
         <source>Language Mode</source>
         <translation>语言模式</translation>
     </message>
@@ -38,45 +38,50 @@
 <context>
     <name>icon</name>
     <message>
-        <location filename="../toolbar.py" line="225"/>
+        <location filename="../toolbar.py" line="227"/>
         <source>Debug Continue</source>
         <translation>调试继续</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="226"/>
+        <location filename="../toolbar.py" line="228"/>
         <source>Debug Step Over</source>
         <translation>单步跳过</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="227"/>
+        <location filename="../toolbar.py" line="229"/>
         <source>Debug Step Into</source>
         <translation>单步调试</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="228"/>
+        <location filename="../toolbar.py" line="230"/>
         <source>Debug Step Out</source>
         <translation>单步跳出</translation>
     </message>
     <message>
         <location filename="../toolbar.py" line="229"/>
         <source>LMB Stop Debug | MMB Ignore Breakpoint</source>
-        <translation>左键停止|中键无断点执行</translation>
+        <translation type="obsolete">左键停止|中键忽略所有断点执行</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="230"/>
+        <location filename="../toolbar.py" line="232"/>
         <source>LMB Open Debug Panel | MMB pdb Input Mode | RMB Switch Language</source>
         <translation>左键打开调试面板|中键进入 pdb 调试模式|右键切换语言</translation>
+    </message>
+    <message>
+        <location filename="../toolbar.py" line="231"/>
+        <source>LMB Stop Debug | MMB Ignore Breakpoints</source>
+        <translation>左键停止|中键忽略所有断点执行</translation>
     </message>
 </context>
 <context>
     <name>info</name>
     <message>
-        <location filename="../panel.py" line="311"/>
+        <location filename="../panel.py" line="314"/>
         <source>Scope Variable</source>
         <translation>域变量</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="313"/>
+        <location filename="../panel.py" line="316"/>
         <source>Function Scope</source>
         <translation>函数域</translation>
     </message>
@@ -84,7 +89,7 @@
 <context>
     <name>label</name>
     <message>
-        <location filename="../panel.py" line="159"/>
+        <location filename="../panel.py" line="160"/>
         <source>Regular Expression</source>
         <translation>正则过滤</translation>
     </message>
@@ -92,22 +97,22 @@
 <context>
     <name>path</name>
     <message>
-        <location filename="../panel.py" line="368"/>
+        <location filename="../panel.py" line="371"/>
         <source>Line Number</source>
         <translation>行数</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="371"/>
+        <location filename="../panel.py" line="374"/>
         <source>File Location</source>
         <translation>文件路径</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="387"/>
+        <location filename="../panel.py" line="390"/>
         <source>warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../panel.py" line="388"/>
+        <location filename="../panel.py" line="391"/>
         <source>File Location not exist</source>
         <translation>文件路径不存在</translation>
     </message>
@@ -115,12 +120,12 @@
 <context>
     <name>pdb</name>
     <message>
-        <location filename="../toolbar.py" line="222"/>
+        <location filename="../toolbar.py" line="224"/>
         <source>pdb Input Mode</source>
         <translation>pdb输入模式</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="223"/>
+        <location filename="../toolbar.py" line="225"/>
         <source>Input pdb Debug Command</source>
         <translation>输入 pdb 调试命令</translation>
     </message>
@@ -128,12 +133,12 @@
 <context>
     <name>reading</name>
     <message>
-        <location filename="../MPDB.py" line="88"/>
+        <location filename="../MPDB.py" line="122"/>
         <source>read fail</source>
         <translation>读取失败</translation>
     </message>
     <message>
-        <location filename="../MPDB.py" line="90"/>
+        <location filename="../MPDB.py" line="124"/>
         <source>file not exists</source>
         <translation>文件不存在</translation>
     </message>
@@ -141,12 +146,12 @@
 <context>
     <name>warn</name>
     <message>
-        <location filename="../MPDB.py" line="156"/>
+        <location filename="../MPDB.py" line="203"/>
         <source>warning</source>
         <translation>警告</translation>
     </message>
     <message>
-        <location filename="../MPDB.py" line="157"/>
+        <location filename="../MPDB.py" line="204"/>
         <source>Debugger UI already install</source>
         <translation>Debugger UI 已经安装</translation>
     </message>
@@ -154,12 +159,12 @@
 <context>
     <name>window</name>
     <message>
-        <location filename="../toolbar.py" line="251"/>
+        <location filename="../toolbar.py" line="253"/>
         <source>Maya Debugger Toolbar</source>
         <translation>Maya 调试工具架</translation>
     </message>
     <message>
-        <location filename="../toolbar.py" line="254"/>
+        <location filename="../toolbar.py" line="256"/>
         <source>Maya Debugger Panel</source>
         <translation>Maya 调试面板</translation>
     </message>
