@@ -12,6 +12,8 @@ All you need to do is pretty simple, follow the step below.
 2. unzip the folder to any location in your computer.(skip this step if you clone the branch)
 3. drag the install.mel to your running Maya viewport.
 
+![alt](img/0.gif)
+
 ![alt](img/01.gif)
 
 When you run the mel script once, the plugin will load every time you open Maya.    
