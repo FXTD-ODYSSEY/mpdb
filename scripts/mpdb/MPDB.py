@@ -35,18 +35,6 @@ def debugMode(func):
         return args
     return wrapper
 
-
-def get_stack(f):
-    stack = []
-    print "================",[f]
-    while f is not None:
-        stack.append(f)
-        filename = f.f_code.co_filename
-        lineno = f.f_lineno
-        print "file",filename,lineno
-        f = f.f_back
-    return stack 
-
 def ignoreBdbQuitError(func):
     """debugMode 过滤 BdbQuit 装饰器
     """
