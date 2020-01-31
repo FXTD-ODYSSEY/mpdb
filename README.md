@@ -41,15 +41,15 @@ CodeEditor on the right and the Scope Information on the left.
 
 ## How to set breakpoint
 
-the plugin fully base on the pdb moudle , you could think it as the pdb moudle wrap for maya and interact with Qt Widget.
+the plugin fully base on the pdb module , you could think it as the pdb module wrap for maya and interact with Qt Widget.
 
 ```python
 import mpdb
 mpdb.set_trace()
 ```
 
-Once the debug toolbar popup, you can import the mpdb moudle already.     
-And how it work is exactly the same as python pdb moudle.
+Once the debug toolbar popup, you can import the mpdb module already.     
+And how it work is exactly the same as python pdb module.
 
 When you use the set_trace method, the next running line will set breakpoint.
 
@@ -86,7 +86,7 @@ if __name__ == "__main__":
 ```
 
 this is the code how I test the mpdb plugin.    
-you can paste the code and run in the Script Editor Directly or you can load it as the moudle and import it.
+you can paste the code and run in the Script Editor Directly or you can load it as the module and import it.
 
 ![alt](img/03.gif)
 
@@ -115,7 +115,7 @@ for cv in crv.cv:
     mpdb.set_trace()
     print (loc,pos)
 ```
-this is a little modified version for mpdb moudle.
+this is a little modified version for mpdb module.
 
 ![alt](img/06.gif)
 
