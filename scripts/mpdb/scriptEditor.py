@@ -7,6 +7,7 @@ __date__ = '2020-01-22 22:56:42'
 """
 
 """
+import sys
 import maya
 from maya import mel
 from maya import cmds
@@ -17,22 +18,17 @@ from Qt import QtGui
 from .utils import mayaWindow
 from .utils import mayaToQT
 
-from bdb import BdbQuit
+# def get_stack(f):
+#     stack = []
+#     while f is not None:
+#         stack.append(f)
+#         print "================"
+#         print "globals",f.f_globals
+#         print "locals",f.f_locals
+#         f = f.f_back
+#     return stack 
 
-def __getRunningCode():
-    import mpdb
-    gCommandExecuterTabs = mel.eval("$tmep = $gCommandExecuterTabs")
-    tab = cmds.tabLayout(gCommandExecuterTabs,q=1,selectTab=1)
-    executers = cmds.formLayout(tab,q=1,childArray=1)
-
-    # NOTE 异常处理 debugger 已经 C++ 删除的情况
-    try:
-        if executers and not mpdb.debugger.debug_icon.isEnabled():
-            mpdb.running_code = cmds.cmdScrollFieldExecuter(executers[0],q=1,text=1)
-    except:
-        pass
-
-def __reporterSetText(text):
+def reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
     for widget in mapp.topLevelWidgets():
         if widget.objectName() == 'MayaWindow':
@@ -45,61 +41,58 @@ def __reporterSetText(text):
     reporter.setPlainText("%s%s\n" % (code,text))
     reporter.moveCursor(QtGui.QTextCursor.End) 
 
-# NOTE maya.utils.executeInMainThreadWithResult 这个方法无需获取 globals 函数，解决变量定义在当前文件scope下的问题
-# // 将Maya的脚本编辑器的全部变量引入 https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
-def __scriptEditorExecuteAll():
+# NOTE 将Maya的脚本编辑器的全部变量引入 
+# // https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+def scriptEditorExecuteAll():
+    import mpdb
+    globals().update(mpdb.f_globals)
+    locals().update(mpdb.f_locals)
+
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
 
-    from mpdb import __reporterSetText
-    __reporterSetText(text)
+    mpdb.reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        try:
-            maya.utils.executeInMainThreadWithResult(text)
-        except BdbQuit:
-            # NOTE 过滤 debug quit 错误
-            pass
+        exec text in mpdb.f_globals, mpdb.f_locals
     elif source == "mel":
         mel.eval(text)
 
-def __scriptEditorExecute():
-    print "__scriptEditorExecute"
-    executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
+def scriptEditorExecute(clear=True):
+    import mpdb
+    globals().update(mpdb.f_globals)
+    locals().update(mpdb.f_locals)
     
+    executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     selected_text = cmds.cmdScrollFieldExecuter(executer,q=1,selectedText=1)
     if selected_text:
         text = selected_text
     else:
         text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
-        cmds.cmdScrollFieldExecuter(executer,e=1,clear=1)
+        if clear:
+            cmds.cmdScrollFieldExecuter(executer,e=1,clear=1)
     
-    from mpdb import __reporterSetText
-    __reporterSetText(text)
+    mpdb.reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        
         for char in ["\n",".","\t","="," "]:
             if char in text.strip():
-                try:
-                    maya.utils.executeInMainThreadWithResult(text)
-                except BdbQuit:
-                    # NOTE 过滤 debug quit 错误
-                    pass
+                exec text in mpdb.f_globals, mpdb.f_locals
                 break
         else:
-            maya.utils.executeInMainThreadWithResult("import pprint;pprint.pprint(%s)" % text)
+            exec("import pprint;pprint.pprint(%s)" % text)
             
     elif source == "mel":
         mel.eval(text)
 
-def __scriptEditorEventFilter():
+def scriptEditorEventFilter():
     import mpdb
     scriptEditor = mayaToQT("scriptEditorPanel1")
+    # NOTE 防止被垃圾回收
     mpdb.__shortcutEventFilter = AddExecuteShortcut(scriptEditor)
 
 class AddExecuteShortcut(QtCore.QObject):
@@ -108,14 +101,20 @@ class AddExecuteShortcut(QtCore.QObject):
     def __init__(self,editor):
         super(AddExecuteShortcut,self).__init__()
         editor.installEventFilter(self)
-        
+
     def eventFilter(self,reciever,event):
         if event.type() == QtCore.QEvent.Type.ShortcutOverride:
             key = event.key()
             KeySequence = QtGui.QKeySequence(key+int(event.modifiers()))
             if KeySequence == QtGui.QKeySequence("Ctrl+E"):
-                print "Ctrl+E"
-                cmds.evalDeferred("from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()")
+                # NOTE Ctrl + E 执行代码
+                from exceptions import SystemExit
+                try:
+                    scriptEditorExecute(False)
+                except SystemExit:
+                    pass
+                import mpdb
+                mpdb.quitting = False
                 return True
 
         return False
@@ -445,26 +444,26 @@ def enhanceScriptEditor():
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecuteAll"))
                         -image "executeAll.png"
-                        -command "handleScriptEditorAction \\"executeAll\\""
+                        -command "handleScriptEditorAction \\"executeAll\\";python \\"import mpdb;mpdb.quitting = False\\""
                         executeAllButton;
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
-                        -command "handleScriptEditorAction \\"execute\\""
+                        -command "handleScriptEditorAction \\"execute\\";python \\"import mpdb;mpdb.quitting = False\\""
                         executeButton;
                 }else{
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecuteAll"))
                         -image "executeAll.png"
-                        -command "python \\"from mpdb import __scriptEditorExecuteAll;__scriptEditorExecuteAll()\\""
+                        -command "python \\"import mpdb;mpdb.scriptEditorExecuteAll();mpdb.quitting = False\\""
                         executeAllButton;
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
-                        -command "python \\"from mpdb import  __scriptEditorExecute;__scriptEditorExecute()\\""
+                        -command "python \\"import mpdb;mpdb.scriptEditorExecute();mpdb.quitting = False\\""
                         executeButton;
                 }
 
@@ -636,7 +635,8 @@ def enhanceScriptEditor():
 
             scriptJob -parent $whichPanel -event "quitApplication" ("removeScriptEditorPanel " + $whichPanel);
 
-            python "from mpdb import  __scriptEditorEventFilter;__scriptEditorEventFilter()";
+            // # NOTE 添加键盘执行事件 
+            python "from mpdb import  scriptEditorEventFilter;scriptEditorEventFilter()";
         }
     ''')
     cmds.scriptedPanelType( 'scriptEditorPanel', e=1, addCallback='addScriptEditorPanel2' )
