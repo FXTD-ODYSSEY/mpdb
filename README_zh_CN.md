@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
 ![alt](img/03.gif)
 
-如果你直接将代码粘贴到脚本编辑器运行，插件无法遭到运行的代码，不过你还是可以看到变量和域的信息。
+如果你直接将代码粘贴到脚本编辑器运行，插件无法找到运行的代码，不过你还是可以看到变量和域的信息。
 
 ![alt](img/04.gif)
 
@@ -210,7 +210,7 @@ Maya 2017 执行脚本编辑器的代码来触发断点会导致 Maya 崩溃。
 - [x]  ~~中断执行添加鼠标中键实现跳过断点完成代码执行 2020-1-30~~ - mpdb模块添加 quitting 变量 代码编辑器运行的代码最后设定为 False ，中途设定为 True 跳过所有 set_trace 断点
 - [x]  ~~完善 github readme 文档~~
 - [x]  ~~github readme 文档 中文版~~
-- [ ]  弄一个 release 分支 在 github 上发布
+- [x]  ~~弄一个 release 分支 在 github 上发布~~
 
 ## 无法解决的问题
 
@@ -218,3 +218,7 @@ Maya 2017 执行脚本编辑器的代码来触发断点会导致 Maya 崩溃。
 - [ ] Debug模式 红框包裹 Maya 主窗口 - 会挡住主窗口使用_(:з」∠)_
 - [ ] reload scriptEditor 报错 - `ImportError: reload(): module __main__ not in sys.modules`
 - [ ] 获取当前代码编辑器执行代码的内容 - 编辑器的函数是可以动态修改的，无法定位
+
+## release 版本更新
+
+`git merge master`
