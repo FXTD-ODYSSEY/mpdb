@@ -5,17 +5,17 @@ import os
 import re
 import sys
 import keyword
-from textwrap import  dedent
+from textwrap import dedent
 
 from maya import cmds
 from maya import OpenMayaUI
 
-from PySide2 import QtGui
-from PySide2 import QtCore
-from PySide2 import QtWidgets
-from PySide2.QtCore import Qt, QRect, QSize,QRegExp
-from PySide2.QtWidgets import QWidget, QPlainTextEdit, QTextEdit,QVBoxLayout
-from PySide2.QtGui import QColor, QPainter, QTextFormat,QTextCharFormat,QFont,QSyntaxHighlighter
+from Qt import QtGui
+from Qt import QtCore
+from Qt import QtWidgets
+from Qt.QtWidgets import QWidget, QPlainTextEdit, QTextEdit,QVBoxLayout
+from Qt.QtGui import QColor, QPainter, QTextFormat,QTextCharFormat,QFont,QSyntaxHighlighter
+from Qt.QtCore import Qt, QRect, QSize,QRegExp
 
 from .utils import mayaShow
 
