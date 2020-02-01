@@ -54,7 +54,7 @@ class MPDB(Pdb,object):
         super(MPDB,self).__init__()
         self.widget = widget
         DIR = os.path.dirname(__file__)
-        self.py_list = [filename for filename in os.listdir(DIR) if filename.endswith(".py")]
+        self.py_list = [os.path.join(DIR,filename) for filename in os.listdir(DIR) if filename.endswith(".py")]
         
     @debugMode
     def interaction(self, frame, traceback):
@@ -66,9 +66,9 @@ class MPDB(Pdb,object):
             return
         
         # NOTE 过滤插件自身的 代码追踪
-        filename = self.curframe.f_code.co_filename.strip()
+        filename = os.path.realpath(self.curframe.f_code.co_filename)
         for py in self.py_list:
-            if r"mpdb" in filename and py in filename:
+            if os.path.realpath(py) == filename:
                 self.onecmd("u")
                 self.onecmd("c")
                 return
