@@ -10,7 +10,7 @@ I using a module installer method to install mpdb plugin, which you could check 
 All you need to do is pretty simple, follow the step below.
 1. download the release version of the plugin. (you also can clone the release branch)
 2. unzip the folder to any location in your computer.(skip this step if you clone the branch)
-3. drag the install.mel to your running Maya viewport.
+3. drag the mpdb.mel to your running Maya viewport.
 
 ![alt](img/0.gif)
 
@@ -166,7 +166,7 @@ Maya2017 execute the scriptEditor code and hit the breakpoint will crash the May
 With my effort, I find out that I use the maya.utils.processIdleEvents function to keep maya alive.   
 However, Maya 2017 catch the execute event as the idle event and that will crash the maya after debug mode exit \_(:з」∠)_   
 So I overwrite the execute button clicked event to fix this problems.   
-the overwrite execute function running seamless like the maya original execute method,you probably do not feel it any way.
+The overwrite execute function running seamless like the maya original execute method,you probably do not feel it any way.
 
 ---
 

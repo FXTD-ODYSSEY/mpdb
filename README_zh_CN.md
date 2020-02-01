@@ -13,7 +13,7 @@ TD 和 TA 调试 Maya Python 代码的福音
 
 1. 在 Github 上下载发布的插件压缩包 （或者将 release 分支克隆到本地）
 2. 将压缩包解压到任意路径上（建议路径保持全英文）(如果是克隆分支的不需要解压操作)
-3. 将 install.mel 拖拽到 Maya 的视窗上 
+3. 将 mpdb.mel 拖拽到 Maya 的视窗上 
 
 ![alt](img/0.gif)
 
