@@ -438,6 +438,7 @@ def enhanceScriptEditor():
 
                 separator -height $iconSize -horizontal false -style single optionsSeperator;
 
+                // # NOTE 判断是否是 Maya 2017 版本
                 int $version = `about -v`;
                 if ($version > 2017){
                     iconTextButton 
