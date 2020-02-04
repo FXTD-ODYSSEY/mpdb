@@ -177,12 +177,32 @@ class MPDB(Pdb,object):
     # def trace_dispatch(self, frame, event, arg):
     #     return super(MPDB,self).trace_dispatch(frame, event, arg)
 
+
+class Worker(QtCore.QRunnable):
+    
+    # finished = QtCore.Signal()
+    def __init__(self):
+        super(Worker, self).__init__()
+
+    def run(self):
+        '''
+        Initialise the runner function with passed args, kwargs.
+        '''
+        import mpdb
+        mpdb.debugger = Debugger_UI()
+
+
 def install():
     import mpdb
     MPDB_UI = Debugger_UI.windowName
     if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
-        mpdb.debugger = mpdb.Debugger_UI()
+        # work = Worker()
+        # thread = QtCore.QThreadPool()
+        # thread.start(work)
+        # thread.waitForDone()
+        mpdb.debugger = Debugger_UI()
         mpdb.debugger_ui = mpdb.debugger.mayaShow()
+
     elif not hasattr(mpdb,"debugger"):
         cmds.deleteUI(MPDB_UI)
         mpdb.debugger = mpdb.Debugger_UI()

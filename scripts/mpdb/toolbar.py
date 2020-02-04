@@ -45,19 +45,22 @@ DIR = os.path.dirname(__file__)
 # class OverLay(QtWidgets.QWidget):
 #     """OverLay 红框Debug标记 暂时弃用"""
 #     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
-#     BackgroundColor = QtGui.QColor(255, 255, 255, 0) 
+#     BackgroundColor = QtGui.QColor(0, 255, 0, 125) 
     
-#     def __init__(self, *args, **kwargs):
-#         QtWidgets.QWidget.__init__(self, *args, **kwargs)
+#     def __init__(self, parent):
+#         super(OverLay,self).__init__()
 #         self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
 #         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput|QtCore.Qt.FramelessWindowHint)
+#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput | QtCore.Qt.FramelessWindowHint)
 #         self.setFocusPolicy( QtCore.Qt.NoFocus )
 #         self.hide()
-#         # self.setEnabled(False)
 
-#         self.setAutoFillBackground(True)
+#         # self.setEnabled(False)
+#         # self.setAutoFillBackground(True)
 #         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+
+#         self.setParent(parent)
+#         parent.installEventFilter(self)
 
 #     def paintEvent(self, event):
         
@@ -68,11 +71,26 @@ DIR = os.path.dirname(__file__)
 #         rectPath = QtGui.QPainterPath()                      
 #         height = self.height() - 4                     
 #         rect = QtCore.QRectF(2, 2, self.width()-4, height)
+        
+#         # NOTE 绘制边界颜色
 #         rectPath.addRoundedRect(rect, 15, 15)
 #         painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
 #         painter.drawPath(rectPath)
-#         painter.setBrush(self.BackgroundColor)
-#         painter.drawRoundedRect(rect, 15, 15)
+
+#         # # NOTE 绘制背景颜色
+#         # painter.setBrush(self.BackgroundColor)
+#         # painter.drawRoundedRect(rect, 15, 15)
+    
+#     def eventFilter(self, obj, event):
+#         if not obj.isWidgetType():
+#             return False
+        
+#         if self.isVisible():
+#             self.setGeometry(obj.rect())
+#         elif event.type() == QtCore.QEvent.Resize:
+#             self.setGeometry(obj.rect())
+
+#         return False
 
 def setDebugMode(func):
     """setDebugMode Debug 装饰器
@@ -80,13 +98,14 @@ def setDebugMode(func):
     @wraps(func)
     def wrapper(self,*args, **kwargs):
         main_win = mayaWindow()
+        stlye = main_win.styleSheet()
         # NOTE Maya 红框标记
-        main_win.setStyleSheet("#MayaWindow {background:red}")
+        main_win.setStyleSheet("%s\n#MayaWindow {background:red}" % stlye)
         # NOTE 激活 Debug 按钮
         self.debug_icon.setEnabled(True)
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
-        main_win.setStyleSheet("")
+        main_win.setStyleSheet(stlye)
         return args
     return wrapper
 
@@ -185,9 +204,9 @@ class Debugger_UI(QtWidgets.QWidget):
 
         # NOTE 设置 Debug 图标事件
         self.debug_continue.clicked.connect(partial(self.setContinue,True))
-        self.debug_step_over.clicked.connect(partial(self.setStep_over,True))
-        self.debug_step_into.clicked.connect(partial(self.setStep_into,True))
-        self.debug_step_out.clicked.connect(partial(self.setStep_out,True))
+        self.debug_step_over.clicked.connect(partial(self.setStepOver,True))
+        self.debug_step_into.clicked.connect(partial(self.setStepInto,True))
+        self.debug_step_out.clicked.connect(partial(self.setStepOut,True))
         self.debug_cancel.clicked.connect(partial(self.setCancel,True))
         self.debug_setting.clicked.connect(self.openPanel)
 
@@ -320,13 +339,13 @@ class Debugger_UI(QtWidgets.QWidget):
     def setContinue(self,state):
         self.debug_continue_state  = state
 
-    def setStep_over(self,state):
+    def setStepOver(self,state):
         self.debug_step_over_state  = state
 
-    def setStep_into(self,state):
+    def setStepInto(self,state):
         self.debug_step_into_state  = state
 
-    def setStep_out(self,state):
+    def setStepOut(self,state):
         self.debug_step_out_state   = state
 
     def setCancel(self,state):
@@ -341,7 +360,7 @@ class Debugger_UI(QtWidgets.QWidget):
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         """setButtonColor set SVG Icon Color
-        
+        # NOTE https://stackoverflow.com/questions/53107173/change-color-png-image-qpushbutton
         Parameters
         ----------
         button : QPushButton
@@ -362,17 +381,12 @@ class Debugger_UI(QtWidgets.QWidget):
                     color.setAlpha(pcolor.alpha())
                     image.setPixelColor(x, y, color)
         button.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
-        
+    
+    # def stateCheck(state):
+
     @setDebugMode
     def breakpoint(self,MPDB,frame):
-        # import time 
-        # curr = time.time()
-        # while True:
-            # elapsed = abs(time.time() - curr)
-            # print elapsed
-            # if elapsed > 3:
-            #     print "elpased"
-            #     return "q"
+
         while True:
 
             if self.debug_continue_state  :
