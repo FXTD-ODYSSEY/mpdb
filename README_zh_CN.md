@@ -216,7 +216,7 @@ Maya 2017 执行脚本编辑器的代码来触发断点会导致 Maya 崩溃。
 
 - [x] reload scriptEditor 报错 `ImportError: reload(): module __main__ not in sys.modules` - 在Maya2017下执行代码会调用 scriptEditor.py 的函数，在执行函数中 reload 自己是不可行的
 - [ ] Debug模式 红框包裹 Maya 主窗口 - 会挡住主窗口使用_(:з」∠)_
-- [ ] 使用 QThread 多线程加载窗口 减少加载卡顿 - 多线程无法减少卡顿，对比体验没有什么区别_(:з」∠)_
+- [x] 使用 QThread 多线程加载窗口 减少加载卡顿 - ~~多线程无法减少卡顿，对比体验没有什么区别_(:з」∠)_~~ -  达到预期了
 - [ ] 获取当前代码编辑器执行代码的内容 - 编辑器的函数是可以动态修改的，无法定位
 
 ## release 版本更新

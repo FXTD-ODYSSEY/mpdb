@@ -28,13 +28,26 @@ LINEBAR_BP_COLOR = QColor("red")
 
 class Highlighter(QSyntaxHighlighter):
     """syntax highlighter"""
+
     def __init__(self, parent=None):
         super(Highlighter, self).__init__(parent)
-
+        self.parent = parent
         self.__rules = []
+        self._numericFormat = QTextCharFormat()
+        self._quotationFormat = QTextCharFormat()
+        self._commentFormat = QTextCharFormat()
+
+        # Quotes
+        self._singleQuotes = QRegExp("'''")
+        self._doubleQuotes = QRegExp('"""')
+
+        # mel multi-line comment: /*  */
+        self._melMLComStart = re.compile('/\\*')
+        self._melMLComEnd = re.compile('\\*/')
+
+    def initialize(self):
         
         # numeric color
-        self._numericFormat = QTextCharFormat()
         self._numericFormat.setForeground(QColor('#9ACD32'))
         
         # mel command options started with -
@@ -57,7 +70,6 @@ class Highlighter(QSyntaxHighlighter):
         self.__rules.append((re.compile('\\bQ\\w+\\b'), mapiFormat))
 
         # quotation
-        self._quotationFormat = QTextCharFormat()
         self._quotationFormat.setForeground(Qt.green)
         # quote: ""
         self.__rules.append((re.compile('".*"'), self._quotationFormat))
@@ -65,7 +77,6 @@ class Highlighter(QSyntaxHighlighter):
         self.__rules.append((re.compile("'.*'"), self._quotationFormat))
 
         # sing line comment
-        self._commentFormat = QTextCharFormat()
         # orange red
         self._commentFormat.setForeground(QColor(255, 128, 64))
         # // mel comment
@@ -92,13 +103,10 @@ class Highlighter(QSyntaxHighlighter):
         errorFormat.setFontWeight(QFont.Bold)
         self.__rules.append((re.compile('// Error:[^\n]*//'), errorFormat))
 
-        # Quotes
-        self._singleQuotes = QRegExp("'''")
-        self._doubleQuotes = QRegExp('"""')
+        
+        self.setDocument(self.parent.document())
 
-        # mel multi-line comment: /*  */
-        self._melMLComStart = re.compile('/\\*')
-        self._melMLComEnd = re.compile('\\*/')
+        
         
     def _numeric(self):
         '''set up numeric format'''
@@ -151,9 +159,9 @@ class Highlighter(QSyntaxHighlighter):
 
         # TODO: should update it when a plug-in was load.
         # function from plug-ins
-        plugins = cmds.pluginInfo(q=1, listPlugins=1)
+        plugins = cmds.pluginInfo(query=1, listPlugins=1)
         for plugin in plugins:
-            funcFromPlugin = cmds.pluginInfo(plugin, q=1, command=1)
+            funcFromPlugin = cmds.pluginInfo(plugin, query=1, command=1)
             if funcFromPlugin:
                 functions += '|'.join(funcFromPlugin)
         functions = functions[:-1] + ')\\b'
@@ -241,6 +249,8 @@ class QLineNumberArea(QWidget):
         self.editor = parent
         layout = QVBoxLayout()
         self.setLayout(layout)
+    
+    def initialize(self):
         self.editor.blockCountChanged.connect(self.update_width)
         self.editor.updateRequest.connect(self.update_on_scroll)
         self.update_width('1')
@@ -350,25 +360,28 @@ class CodeEditor(QPlainTextEdit):
     def __init__(self, parent=None):
         super(CodeEditor,self).__init__(parent)
         self.lineNumberArea = QLineNumberArea(self)
+        self.highlighter = Highlighter(parent=self)
+        self.font = QtGui.QFont()
+
         self.blockCountChanged.connect(self.updateLineNumberAreaWidth)
         self.updateRequest.connect(self.updateLineNumberArea)
-        # self.cursorPositionChanged.connect(self.highlightCurrentLine)
 
         # NOTE 使用 Courier New 字体解决缩进问题
         document = self.document()
-        font = document.defaultFont()
-        font.setFamily("Courier New,Microsoft YaHei UI")
-        document.setDefaultFont(font)
+        self.font.setFamily("Courier New,Microsoft YaHei UI")
+        document.setDefaultFont(self.font)
+
+        self.paintLineNum = -1
+        self.installEventFilter(self)
+
+    def initialize(self):
+        
+        self.lineNumberArea.initialize()
+        self.highlighter.initialize()
 
         self.updateLineNumberAreaWidth(5)
-        highlighter = Highlighter(parent=self)
-        highlighter.setDocument(document)
-        
         self.setReadOnly(True)
         self.setWordWrapMode(QtGui.QTextOption.NoWrap)
-        self.paintLineNum = -1
-
-        self.installEventFilter(self)
 
     def eventFilter(self, reciever, event):
         # NOTE 如果 focus 窗口， 阻断键盘输入

@@ -126,7 +126,7 @@ class AddExecuteShortcut(QtCore.QObject):
 def enhanceScriptEditor():
     
     # NOTE 避免重复修改
-    callback = cmds.scriptedPanelType( 'scriptEditorPanel', q=1, addCallback=1 )
+    callback = cmds.scriptedPanelType( 'scriptEditorPanel', query=True, addCallback=True )
     if "addScriptEditorPanel2" == callback.strip():
         return
     
@@ -644,7 +644,7 @@ def enhanceScriptEditor():
         }
     ''')
     cmds.scriptedPanelType( 'scriptEditorPanel', e=1, addCallback='addScriptEditorPanel2' )
-    if cmds.workspaceControl("scriptEditorPanel1Window",q=1,ex=1):
+    if cmds.workspaceControl("scriptEditorPanel1Window",query=1,ex=1):
         # NOTE 关闭当前代码编辑器窗口
         cmds.deleteUI("scriptEditorPanel1Window")
         # NOTE 重新打开一个新的窗口
