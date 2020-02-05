@@ -17,10 +17,10 @@ except ImportError:
     sys.path.append(os.path.join(DIR,"_vendor"))
     import Qt
 
-import scriptEditor
-# reload(scriptEditor)
 import utils
 reload(utils)
+import scriptEditor
+# reload(scriptEditor)
 import codeEditor
 reload(codeEditor)
 import panel

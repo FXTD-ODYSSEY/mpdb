@@ -9,9 +9,11 @@ __date__ = '2020-01-04 20:42:11'
 """
 import os
 import sys
+import threading
 from pdb import Pdb
 from bdb import BdbQuit
 from functools import wraps
+from textwrap import dedent
 
 import maya
 from maya import cmds
@@ -22,6 +24,7 @@ from Qt import QtWidgets
 
 from .utils import mayaWindow
 from .toolbar import Debugger_UI
+from .scriptEditor import enhanceScriptEditor
 
 def debugMode(func):
     """debugMode Debug 装饰器
@@ -65,12 +68,18 @@ class MPDB(Pdb,object):
             self.onecmd("c")
             return
         
-        # NOTE 过滤插件自身的 代码追踪
         filename = os.path.realpath(self.curframe.f_code.co_filename)
+        # NOTE 过滤 Python 官方库 的 代码追踪
+        if "python27.zip" in filename:
+            self.onecmd("u")
+            self.onecmd("n")
+            return
+
+        # NOTE 过滤插件自身的 代码追踪
         for py in self.py_list:
             if os.path.realpath(py) == filename:
                 self.onecmd("u")
-                self.onecmd("c")
+                self.onecmd("n")
                 return
 
         self.print_stack_entry(self.stack[self.curindex])
@@ -177,16 +186,28 @@ class MPDB(Pdb,object):
     # def trace_dispatch(self, frame, event, arg):
     #     return super(MPDB,self).trace_dispatch(frame, event, arg)
 
+def __setupUi():
+    import mpdb
+    mpdb.debugger.initialize()
+    # QtWidgets.QApplication.processEvents()
+    cmds.evalDeferred(dedent("""
+        import mpdb
+        mpdb.debugger_ui = mpdb.debugger.mayaShow()
+    """))
+
 def install():
     import mpdb
     MPDB_UI = Debugger_UI.windowName
-    if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
-        mpdb.debugger = mpdb.Debugger_UI()
-        mpdb.debugger_ui = mpdb.debugger.mayaShow()
-    elif not hasattr(mpdb,"debugger"):
+    if not hasattr(mpdb,"debugger") and cmds.workspaceControl(MPDB_UI,q=1,ex=1):
         cmds.deleteUI(MPDB_UI)
+    
+    if not cmds.workspaceControl(MPDB_UI,q=1,ex=1):
+        enhanceScriptEditor()
         mpdb.debugger = mpdb.Debugger_UI()
-        mpdb.debugger_ui = mpdb.debugger.mayaShow()
+        # mpdb.debugger.initialize()
+        # mpdb.debugger_ui = mpdb.debugger.mayaShow()
+        thread = threading.Thread(target=__setupUi)
+        thread.start()
     else:
         title = QtWidgets.QApplication.translate("warn", "warning")
         msg = QtWidgets.QApplication.translate("warn", "Debugger UI already install")

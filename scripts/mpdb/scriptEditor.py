@@ -18,15 +18,15 @@ from Qt import QtGui
 from .utils import mayaWindow
 from .utils import mayaToQT
 
-# def get_stack(f):
-#     stack = []
-#     while f is not None:
-#         stack.append(f)
-#         print "================"
-#         print "globals",f.f_globals
-#         print "locals",f.f_locals
-#         f = f.f_back
-#     return stack 
+def get_stack(f):
+    stack = []
+    while f is not None:
+        stack.append(f)
+        print "================"
+        print "globals",f.f_globals
+        print "locals",f.f_locals
+        f = f.f_back
+    return stack 
 
 def reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
@@ -42,16 +42,18 @@ def reporterSetText(text):
     reporter.moveCursor(QtGui.QTextCursor.End) 
 
 # NOTE 将Maya的脚本编辑器的全部变量引入 
-# // https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
-def scriptEditorExecuteAll():
+# NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
+def scriptEditorExecuteAll(f_globals=None):
     import mpdb
     globals().update(mpdb.f_globals)
     locals().update(mpdb.f_locals)
+    if f_globals:
+        globals().update(f_globals)
 
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
 
-    mpdb.reporterSetText(text)
+    reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
@@ -60,10 +62,12 @@ def scriptEditorExecuteAll():
     elif source == "mel":
         mel.eval(text)
 
-def scriptEditorExecute(clear=True):
+def scriptEditorExecute(f_globals=None,clear=True):
     import mpdb
     globals().update(mpdb.f_globals)
     locals().update(mpdb.f_locals)
+    if f_globals:
+        globals().update(f_globals)
     
     executer = mel.eval("$temp = $gLastFocusedCommandExecuter")
     selected_text = cmds.cmdScrollFieldExecuter(executer,q=1,selectedText=1)
@@ -74,12 +78,12 @@ def scriptEditorExecute(clear=True):
         if clear:
             cmds.cmdScrollFieldExecuter(executer,e=1,clear=1)
     
-    mpdb.reporterSetText(text)
+    reporterSetText(text)
 
     text = text.strip()
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        for char in ["\n",".","\t","="," "]:
+        for char in ["\n","\t","="," "]:
             if char in text.strip():
                 exec text in mpdb.f_globals, mpdb.f_locals
                 break
@@ -110,7 +114,7 @@ class AddExecuteShortcut(QtCore.QObject):
                 # NOTE Ctrl + E 执行代码
                 from exceptions import SystemExit
                 try:
-                    scriptEditorExecute(False)
+                    scriptEditorExecute(f_globals=globals(),clear=False)
                 except SystemExit:
                     pass
                 import mpdb
@@ -122,7 +126,7 @@ class AddExecuteShortcut(QtCore.QObject):
 def enhanceScriptEditor():
     
     # NOTE 避免重复修改
-    callback = cmds.scriptedPanelType( 'scriptEditorPanel', q=1, addCallback=1 )
+    callback = cmds.scriptedPanelType( 'scriptEditorPanel', query=True, addCallback=True )
     if "addScriptEditorPanel2" == callback.strip():
         return
     
@@ -458,13 +462,13 @@ def enhanceScriptEditor():
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecuteAll"))
                         -image "executeAll.png"
-                        -command "python \\"import mpdb;mpdb.scriptEditorExecuteAll();mpdb.quitting = False\\""
+                        -command "python \\"import mpdb;mpdb.scriptEditorExecuteAll(globals());mpdb.quitting = False\\""
                         executeAllButton;
                     iconTextButton 
                         -width $iconSize -height $iconSize
                         -annotation (uiRes("m_scriptEditorPanel.kExecute"))
                         -image "execute.png"
-                        -command "python \\"import mpdb;mpdb.scriptEditorExecute();mpdb.quitting = False\\""
+                        -command "python \\"import mpdb;mpdb.scriptEditorExecute(globals());mpdb.quitting = False\\""
                         executeButton;
                 }
 
@@ -641,7 +645,7 @@ def enhanceScriptEditor():
         }
     ''')
     cmds.scriptedPanelType( 'scriptEditorPanel', e=1, addCallback='addScriptEditorPanel2' )
-    if cmds.workspaceControl("scriptEditorPanel1Window",q=1,ex=1):
+    if cmds.workspaceControl("scriptEditorPanel1Window",query=1,ex=1):
         # NOTE 关闭当前代码编辑器窗口
         cmds.deleteUI("scriptEditorPanel1Window")
         # NOTE 重新打开一个新的窗口

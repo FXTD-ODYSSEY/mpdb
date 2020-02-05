@@ -275,9 +275,9 @@ class Debugger_Info(QtWidgets.QWidget):
 
         self.var_toggle_anim = CollapsibleWidget.install(self.Var_Toggle,self.Filter_Table)
         self.scope_toggle_anim = CollapsibleWidget.install(self.Scope_Toggle,self.Scope_List)
-        
+    
+    def initialize(self):
         self.Scope_List.itemClicked.connect(self.itemClickEvent)
-
         self.Filter_Table.delegate.varaibleModified.connect(self.modifyScopeEvent)
 
     def modifyScopeEvent(self,delegate,val):
@@ -341,9 +341,11 @@ class LinkPathLabel(QtWidgets.QLabel):
         self.panel = panel
         self.lineno = None
         self.path = ""
+        self._color = "yellow"
+    
+    def initialize(self):
 
         self.linkActivated.connect(self.openPath)
-        self._color = "yellow"
         self.setTextInteractionFlags(QtCore.Qt.TextSelectableByMouse|QtCore.Qt.LinksAccessibleByMouse)
         self.setWordWrap(True)
         
@@ -391,10 +393,12 @@ class LinkPathLabel(QtWidgets.QLabel):
 
 
 class Debugger_Panel(QtWidgets.QWidget):
+
+    windowName = "MPDB_Panel_UI"
+
     def __init__(self,toolbar):
         super(Debugger_Panel,self).__init__()
-        self.windowName = "MPDB_Panel_UI"
-        self.setWindowTitle(self.windowName)
+        
         self.toolbar = toolbar
 
         self.info_panel = Debugger_Info()
@@ -419,6 +423,12 @@ class Debugger_Panel(QtWidgets.QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.splitter)
         self.setLayout(layout)
+
+    def initialize(self):
+        self.setWindowTitle(self.windowName)
+        self.info_panel.initialize()
+        self.editor.initialize()
+        self.link.initialize()
 
     def mayaShow(self):
         ptr = mayaShow(self,self.windowName)

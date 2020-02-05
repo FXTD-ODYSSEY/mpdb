@@ -22,8 +22,6 @@ from .utils import getStatusLine
 from .utils import traverseChildren
 from .utils import mayaToQT
 
-from .scriptEditor import enhanceScriptEditor
-
 from .panel import Debugger_Panel
 
 from Qt import QtGui
@@ -45,19 +43,22 @@ DIR = os.path.dirname(__file__)
 # class OverLay(QtWidgets.QWidget):
 #     """OverLay 红框Debug标记 暂时弃用"""
 #     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
-#     BackgroundColor = QtGui.QColor(255, 255, 255, 0) 
+#     BackgroundColor = QtGui.QColor(0, 255, 0, 125) 
     
-#     def __init__(self, *args, **kwargs):
-#         QtWidgets.QWidget.__init__(self, *args, **kwargs)
+#     def __init__(self, parent):
+#         super(OverLay,self).__init__()
 #         self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
 #         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput|QtCore.Qt.FramelessWindowHint)
+#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput | QtCore.Qt.FramelessWindowHint)
 #         self.setFocusPolicy( QtCore.Qt.NoFocus )
 #         self.hide()
-#         # self.setEnabled(False)
 
-#         self.setAutoFillBackground(True)
+#         # self.setEnabled(False)
+#         # self.setAutoFillBackground(True)
 #         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
+
+#         self.setParent(parent)
+#         parent.installEventFilter(self)
 
 #     def paintEvent(self, event):
         
@@ -68,11 +69,26 @@ DIR = os.path.dirname(__file__)
 #         rectPath = QtGui.QPainterPath()                      
 #         height = self.height() - 4                     
 #         rect = QtCore.QRectF(2, 2, self.width()-4, height)
+        
+#         # NOTE 绘制边界颜色
 #         rectPath.addRoundedRect(rect, 15, 15)
 #         painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
 #         painter.drawPath(rectPath)
-#         painter.setBrush(self.BackgroundColor)
-#         painter.drawRoundedRect(rect, 15, 15)
+
+#         # # NOTE 绘制背景颜色
+#         # painter.setBrush(self.BackgroundColor)
+#         # painter.drawRoundedRect(rect, 15, 15)
+    
+#     def eventFilter(self, obj, event):
+#         if not obj.isWidgetType():
+#             return False
+        
+#         if self.isVisible():
+#             self.setGeometry(obj.rect())
+#         elif event.type() == QtCore.QEvent.Resize:
+#             self.setGeometry(obj.rect())
+
+#         return False
 
 def setDebugMode(func):
     """setDebugMode Debug 装饰器
@@ -80,13 +96,14 @@ def setDebugMode(func):
     @wraps(func)
     def wrapper(self,*args, **kwargs):
         main_win = mayaWindow()
+        stlye = main_win.styleSheet()
         # NOTE Maya 红框标记
-        main_win.setStyleSheet("#MayaWindow {background:red}")
+        main_win.setStyleSheet("%s\n#MayaWindow {background:red}" % stlye)
         # NOTE 激活 Debug 按钮
         self.debug_icon.setEnabled(True)
         args = func(self,*args, **kwargs)
         self.debug_icon.setEnabled(False)
-        main_win.setStyleSheet("")
+        main_win.setStyleSheet(stlye)
         return args
     return wrapper
 
@@ -162,48 +179,18 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_cancel_run_state = False
         self.debug_pdb_state        = False
         
-
-        # NOTE 添加 Ctrl + E 执行快捷键 | 修复 Maya 2017 崩溃问题
-        enhanceScriptEditor()
-
         # NOTE 加载 UI 文件
         ui_path = os.path.join(DIR,"ui","debug.ui")
         loadUi(ui_path,self)
         
-        # NOTE 设置 Debug 图标颜色
-        self.setButtonColor(self.debug_continue,QtGui.QColor(117, 190, 255))
-        self.setButtonColor(self.debug_step_over,QtGui.QColor(117, 190, 255))
-        self.setButtonColor(self.debug_step_into,QtGui.QColor(117, 190, 255))
-        self.setButtonColor(self.debug_step_out,QtGui.QColor(117, 190, 255))
-        self.setButtonColor(self.debug_cancel)
-        self.setButtonColor(self.debug_setting,QtGui.QColor(215, 215, 215))
-
-        # NOTE 默认禁用 Debug 图标
-        self.debug_icon.setEnabled(False)
         # NOTE 生成 Debug 面板
         self.panel = Debugger_Panel(self)
-
-        # NOTE 设置 Debug 图标事件
-        self.debug_continue.clicked.connect(partial(self.setContinue,True))
-        self.debug_step_over.clicked.connect(partial(self.setStep_over,True))
-        self.debug_step_into.clicked.connect(partial(self.setStep_into,True))
-        self.debug_step_out.clicked.connect(partial(self.setStep_out,True))
-        self.debug_cancel.clicked.connect(partial(self.setCancel,True))
-        self.debug_setting.clicked.connect(self.openPanel)
-
-        # NOTE 添加鼠标中键打开 Debug 图标
-        self.setupScriptIconMiddleClick()
-        # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
-        self.setupDebugSettingMiddleClick()
-        # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
-        self.setupDebugCancelMiddleClick()
 
         # NOTE 加载翻译器
         self.trans = QtCore.QTranslator(self)
 
         # NOTE setting 图标添加 右键菜单
         self.debug_setting.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.debug_setting.customContextMenuRequested.connect(self.showSettingMenu)
 
         # NOTE 初始化 setting 右键菜单
         self.setting_menu = QtWidgets.QMenu(self)
@@ -212,13 +199,12 @@ class Debugger_UI(QtWidgets.QWidget):
         action.setDefaultWidget(self.i18n_seperator)
         self.setting_menu.addAction(action)
 
+        # self.retranslateUi()
         self.localeList = {
             "zh_CN":u"中文",
             "en_US":u"English",
         }
 
-        self.retranslateUi()
-    
     def retranslateUi(self):
         # NOTE pdb 输入框
         self.pdb_title = QtWidgets.QApplication.translate("pdb", "pdb Input Mode")
@@ -249,12 +235,44 @@ class Debugger_UI(QtWidgets.QWidget):
         self.i18n_seperator.setText(self.i18n_mode)
 
         # NOTE 窗口名称
-        if cmds.workspaceControl(self.windowName,q=1,ex=1):
+        if cmds.workspaceControl(self.windowName,query=1,ex=1):
             toolbar_name = QtWidgets.QApplication.translate("window", "Maya Debugger Toolbar")
             cmds.workspaceControl(self.windowName,e=1,label=toolbar_name)
-        if cmds.window(self.panel.windowName,q=1,ex=1):
+        if cmds.window(self.panel.windowName,query=1,ex=1):
             panel_name = QtWidgets.QApplication.translate("window", "Maya Debugger Panel")
             cmds.window(self.panel.windowName,e=1,title=panel_name)
+
+    def initialize(self):
+        
+        self.panel.initialize()
+
+        # NOTE 设置 Debug 图标颜色
+        self.setButtonColor(self.debug_continue,QtGui.QColor(117, 190, 255))
+        self.setButtonColor(self.debug_step_over,QtGui.QColor(117, 190, 255))
+        self.setButtonColor(self.debug_step_into,QtGui.QColor(117, 190, 255))
+        self.setButtonColor(self.debug_step_out,QtGui.QColor(117, 190, 255))
+        self.setButtonColor(self.debug_cancel)
+        self.setButtonColor(self.debug_setting,QtGui.QColor(215, 215, 215))
+
+        # NOTE 默认禁用 Debug 图标
+        self.debug_icon.setEnabled(False)
+
+        # NOTE 设置 Debug 图标事件
+        self.debug_continue.clicked.connect(self.setContinue)
+        self.debug_step_over.clicked.connect(self.setStepOver)
+        self.debug_step_into.clicked.connect(self.setStepInto)
+        self.debug_step_out.clicked.connect(self.setStepOut)
+        self.debug_cancel.clicked.connect(self.setCancel)
+        self.debug_setting.clicked.connect(self.openPanel)
+
+        # NOTE 添加鼠标中键打开 Debug 图标
+        self.setupScriptIconMiddleClick()
+        # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
+        self.setupDebugSettingMiddleClick()
+        # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
+        self.setupDebugCancelMiddleClick()
+
+        self.debug_setting.customContextMenuRequested.connect(self.showSettingMenu)
 
     @property
     def localeList(self):
@@ -295,8 +313,8 @@ class Debugger_UI(QtWidgets.QWidget):
     def setupScriptIconMiddleClick(self):
         # NOTE 获取 脚本编辑器 图标按钮
         gCommandLineForm = mel.eval('$tempVar = $gCommandLineForm')
-        commandLineForm = cmds.formLayout(gCommandLineForm, q=1, ca=1)[0]
-        cmdWndIcon = cmds.formLayout(commandLineForm, q=1, ca=1)[-1]
+        commandLineForm = cmds.formLayout(gCommandLineForm, query=1, ca=1)[0]
+        cmdWndIcon = cmds.formLayout(commandLineForm, query=1, ca=1)[-1]
         cmdWnd = mayaToQT(cmdWndIcon)
 
         # NOTE 添加中键点击信号
@@ -307,41 +325,41 @@ class Debugger_UI(QtWidgets.QWidget):
     
     def setupDebugSettingMiddleClick(self):
         self.Setting_signal = MiddleClickSignal(self.debug_setting)
-        self.Setting_signal.middleClicked.connect(partial(self.setPdb,True))
+        self.Setting_signal.middleClicked.connect(self.setPdb)
 
     def setupDebugCancelMiddleClick(self):
         self.Cancel_signal = MiddleClickSignal(self.debug_cancel)
-        self.Cancel_signal.middleClicked.connect(partial(self.setCancelRun,True))
+        self.Cancel_signal.middleClicked.connect(self.setCancelRun)
 
     def openPanel(self):
         self.panel_win = self.panel.mayaShow()
         self.retranslateUi()
 
-    def setContinue(self,state):
+    def setContinue(self,state=True):
         self.debug_continue_state  = state
 
-    def setStep_over(self,state):
+    def setStepOver(self,state=True):
         self.debug_step_over_state  = state
 
-    def setStep_into(self,state):
+    def setStepInto(self,state=True):
         self.debug_step_into_state  = state
 
-    def setStep_out(self,state):
+    def setStepOut(self,state=True):
         self.debug_step_out_state   = state
 
-    def setCancel(self,state):
+    def setCancel(self,state=True):
         self.debug_cancel_state     = state
 
-    def setCancelRun(self,state):
+    def setCancelRun(self,state=True):
         self.debug_cancel_run_state = state
 
-    def setPdb(self,state):
+    def setPdb(self,state=True):
         if self.debug_icon.isEnabled():
             self.debug_pdb_state = state
 
     def setButtonColor(self,button,color=QtGui.QColor("red"),size=25):
         """setButtonColor set SVG Icon Color
-        
+        # NOTE https://stackoverflow.com/questions/53107173/change-color-png-image-qpushbutton
         Parameters
         ----------
         button : QPushButton
@@ -362,17 +380,12 @@ class Debugger_UI(QtWidgets.QWidget):
                     color.setAlpha(pcolor.alpha())
                     image.setPixelColor(x, y, color)
         button.setIcon(QtGui.QIcon(QtGui.QPixmap.fromImage(image)))
-        
+    
+    # def stateCheck(state):
+
     @setDebugMode
     def breakpoint(self,MPDB,frame):
-        # import time 
-        # curr = time.time()
-        # while True:
-            # elapsed = abs(time.time() - curr)
-            # print elapsed
-            # if elapsed > 3:
-            #     print "elpased"
-            #     return "q"
+
         while True:
 
             if self.debug_continue_state  :
@@ -416,11 +429,11 @@ class Debugger_UI(QtWidgets.QWidget):
         if self.debug_icon.isEnabled():
             self.debug_cancel_state = True
             
-        if cmds.workspaceControl(self.windowName,q=1,ex=1):
+        if cmds.workspaceControl(self.windowName,query=1,ex=1):
             cmds.evalDeferred("cmds.deleteUI('%s')" % self.windowName)
 
         panel_name = self.panel.windowName
-        if cmds.window(panel_name,q=1,ex=1):
+        if cmds.window(panel_name,query=1,ex=1):
             cmds.evalDeferred("cmds.deleteUI('%s')" % panel_name)
 
     def mayaShow(self):
@@ -438,9 +451,9 @@ class Debugger_UI(QtWidgets.QWidget):
             
             return toolBar
         else:
-            if not cmds.workspaceControl(name,q=1,vis=1):
+            if not cmds.workspaceControl(name,query=1,vis=1):
                 cmds.workspaceControl(name,e=1,vis=1)
-            if cmds.workspaceControl(name,q=1,fl=1):
+            if cmds.workspaceControl(name,query=1,fl=1):
                 cmds.evalDeferred(dedent("""
                     from maya import cmds
                     cmds.workspaceControl('%s',e=1,
