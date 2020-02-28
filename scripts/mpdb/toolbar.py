@@ -40,56 +40,6 @@ from maya import OpenMayaUI
 
 DIR = os.path.dirname(__file__)
 
-# class OverLay(QtWidgets.QWidget):
-#     """OverLay 红框Debug标记 暂时弃用"""
-#     BorderColor     = QtGui.QColor(255, 0, 0, 255)     
-#     BackgroundColor = QtGui.QColor(0, 255, 0, 125) 
-    
-#     def __init__(self, parent):
-#         super(OverLay,self).__init__()
-#         self.setAttribute(QtCore.Qt.WA_NoSystemBackground)
-#         self.setAttribute(QtCore.Qt.WA_TransparentForMouseEvents)
-#         self.setWindowFlags(QtCore.Qt.WindowTransparentForInput | QtCore.Qt.FramelessWindowHint)
-#         self.setFocusPolicy( QtCore.Qt.NoFocus )
-#         self.hide()
-
-#         # self.setEnabled(False)
-#         # self.setAutoFillBackground(True)
-#         # self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-
-#         self.setParent(parent)
-#         parent.installEventFilter(self)
-
-#     def paintEvent(self, event):
-        
-#         # NOTE https://stackoverflow.com/questions/51687692/how-to-paint-roundedrect-border-outline-the-same-width-all-around-in-pyqt-pysi
-#         painter = QtGui.QPainter(self)
-#         painter.setRenderHint(QtGui.QPainter.Antialiasing)   
-
-#         rectPath = QtGui.QPainterPath()                      
-#         height = self.height() - 4                     
-#         rect = QtCore.QRectF(2, 2, self.width()-4, height)
-        
-#         # NOTE 绘制边界颜色
-#         rectPath.addRoundedRect(rect, 15, 15)
-#         painter.setPen(QtGui.QPen(self.BorderColor, 2, QtCore.Qt.SolidLine,QtCore.Qt.RoundCap, QtCore.Qt.RoundJoin))
-#         painter.drawPath(rectPath)
-
-#         # # NOTE 绘制背景颜色
-#         # painter.setBrush(self.BackgroundColor)
-#         # painter.drawRoundedRect(rect, 15, 15)
-    
-#     def eventFilter(self, obj, event):
-#         if not obj.isWidgetType():
-#             return False
-        
-#         if self.isVisible():
-#             self.setGeometry(obj.rect())
-#         elif event.type() == QtCore.QEvent.Resize:
-#             self.setGeometry(obj.rect())
-
-#         return False
-
 def setDebugMode(func):
     """setDebugMode Debug 装饰器
     """
@@ -199,6 +149,13 @@ class Debugger_UI(QtWidgets.QWidget):
         action.setDefaultWidget(self.i18n_seperator)
         self.setting_menu.addAction(action)
 
+        # NOTE 添加鼠标中键打开 Debug 图标
+        self.setupScriptIconMiddleClick()
+        # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
+        self.setupDebugSettingMiddleClick()
+        # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
+        self.setupDebugCancelMiddleClick()
+
         # self.retranslateUi()
         self.localeList = {
             "zh_CN":u"中文",
@@ -264,13 +221,6 @@ class Debugger_UI(QtWidgets.QWidget):
         self.debug_step_out.clicked.connect(self.setStepOut)
         self.debug_cancel.clicked.connect(self.setCancel)
         self.debug_setting.clicked.connect(self.openPanel)
-
-        # NOTE 添加鼠标中键打开 Debug 图标
-        self.setupScriptIconMiddleClick()
-        # NOTE 添加鼠标中键 点击 setting 图标 使用 pdb 模式 Debug
-        self.setupDebugSettingMiddleClick()
-        # NOTE 添加鼠标中键 点击 cancel 图标 执行后续代码
-        self.setupDebugCancelMiddleClick()
 
         self.debug_setting.customContextMenuRequested.connect(self.showSettingMenu)
 
