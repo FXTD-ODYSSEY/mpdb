@@ -26,7 +26,5 @@ import mpdb
 mpdb.install()
 """
 
-# ----------------------------------------------------------------------------
-
-
-cmds.evalDeferred(INSTALL_COMMAND)
+if not cmds.about(batch=True):
+    cmds.evalDeferred(INSTALL_COMMAND)
