@@ -3,6 +3,8 @@
 Maya Python 代码调试器   
 TD 和 TA 调试 Maya Python 代码的福音
 
+[博客总结](https://blog.l0v0.com/posts/13258e66.html)
+
 [en_US](./README.md) | [zh_CN](./README_zh_CN.md)
 
 

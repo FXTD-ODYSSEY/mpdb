@@ -7,6 +7,7 @@ __date__ = '2020-01-22 22:56:42'
 """
 
 """
+import re
 import sys
 import maya
 from maya import mel
@@ -18,15 +19,15 @@ from Qt import QtGui
 from .utils import mayaWindow
 from .utils import mayaToQT
 
-def get_stack(f):
-    stack = []
-    while f is not None:
-        stack.append(f)
-        print "================"
-        print "globals",f.f_globals
-        print "locals",f.f_locals
-        f = f.f_back
-    return stack 
+# def get_stack(f):
+#     stack = []
+#     while f is not None:
+#         stack.append(f)
+#         print "================"
+#         print "globals",f.f_globals
+#         print "locals",f.f_locals
+#         f = f.f_back
+#     return stack 
 
 def reporterSetText(text):
     mapp = QtWidgets.QApplication.instance()
@@ -55,7 +56,9 @@ def scriptEditorExecuteAll(f_globals=None):
 
     reporterSetText(text)
 
-    text = text.strip()
+    # NOTE __name__ == "__main__" 改为判断 __name__ == "mpdb"
+    text = re.sub(r"__name__ == [\',\"]__main__[\',\"]","__name__ == 'mpdb'",text.strip())
+    
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
         exec text in mpdb.f_globals, mpdb.f_locals
@@ -63,6 +66,7 @@ def scriptEditorExecuteAll(f_globals=None):
         mel.eval(text)
 
 def scriptEditorExecute(f_globals=None,clear=True):
+    
     import mpdb
     globals().update(mpdb.f_globals)
     locals().update(mpdb.f_locals)
@@ -80,15 +84,20 @@ def scriptEditorExecute(f_globals=None,clear=True):
     
     reporterSetText(text)
 
-    text = text.strip()
+    # NOTE __name__ == "__main__" 改为判断 __name__ == "mpdb"
+    pattern = r"__name__\s*==\s*[\',\"]__main__[\',\"]"
+    text = re.sub(pattern,"__name__ == 'mpdb'",text.strip())
+
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
-        for char in ["\n","\t","="," "]:
-            if char in text.strip():
-                exec text in mpdb.f_globals, mpdb.f_locals
-                break
+        if "\n" in text:
+            exec text in mpdb.f_globals, mpdb.f_locals
         else:
-            exec("import pprint;pprint.pprint(%s)" % text)
+            try:
+                exec("import pprint;pprint.pprint(%s)" % text)
+            except:
+                exec text in mpdb.f_globals, mpdb.f_locals
+
             
     elif source == "mel":
         mel.eval(text)
