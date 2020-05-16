@@ -42,6 +42,12 @@ def reporterSetText(text):
     reporter.setPlainText("%s%s\n" % (code,text))
     reporter.moveCursor(QtGui.QTextCursor.End) 
 
+def cleanScript(text):
+    # NOTE __name__ == "__main__" 改为判断 __name__ == "mpdb"
+    text = re.sub(r"__name__ == [\',\"]__main__[\',\"]","__name__ == 'mpdb'",text.strip())
+    # NOTE 清空注释 | 避免 coding 报错
+    return re.sub(r"\S*#.*","",text)
+
 # NOTE 将Maya的脚本编辑器的全部变量引入 
 # NOTE https://stackoverflow.com/questions/10622268/accessing-variables-from-ipython-interactive-namespace-in-a-script
 def scriptEditorExecuteAll(f_globals=None):
@@ -55,10 +61,8 @@ def scriptEditorExecuteAll(f_globals=None):
     text = cmds.cmdScrollFieldExecuter(executer,q=1,text=1)
 
     reporterSetText(text)
+    text = cleanScript(text)
 
-    # NOTE __name__ == "__main__" 改为判断 __name__ == "mpdb"
-    text = re.sub(r"__name__ == [\',\"]__main__[\',\"]","__name__ == 'mpdb'",text.strip())
-    
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
         exec text in mpdb.f_globals, mpdb.f_locals
@@ -83,10 +87,7 @@ def scriptEditorExecute(f_globals=None,clear=True):
             cmds.cmdScrollFieldExecuter(executer,e=1,clear=1)
     
     reporterSetText(text)
-
-    # NOTE __name__ == "__main__" 改为判断 __name__ == "mpdb"
-    pattern = r"__name__\s*==\s*[\',\"]__main__[\',\"]"
-    text = re.sub(pattern,"__name__ == 'mpdb'",text.strip())
+    text = cleanScript(text)
 
     source = cmds.cmdScrollFieldExecuter(executer,q=1,sourceType=1)
     if source == "python":
