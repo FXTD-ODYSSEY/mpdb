@@ -8,6 +8,7 @@ __date__ = '2020-01-05 22:10:22'
 Debugger UI setup
 """
 import os
+import re
 import sys
 import time
 from textwrap import dedent
@@ -264,11 +265,13 @@ class FilterTableWidget(QtWidgets.QWidget):
         self.proxy.setFilterKeyColumn(index)
 
 class Debugger_Info(QtWidgets.QWidget):
-    def __init__(self):
+    def __init__(self,parent):
         super(Debugger_Info,self).__init__()
 
         ui_path = os.path.join(DIR,"ui","debugVar.ui")
         loadUi(ui_path,self)
+        
+        self.panel = parent
         
         self.Filter_Table = FilterTableWidget()
         replaceWidget(self.Var_Table,self.Filter_Table)
@@ -323,6 +326,28 @@ class Debugger_Info(QtWidgets.QWidget):
     def itemClickEvent(self,item):
         self.Filter_Table.clearItems()
         self.Filter_Table.addItems(item.locals)
+        
+        # NOTE 定位代码文件
+        path = item.text()
+        lineno = re.search("\d+$",path[:-1]).group(0)
+        filename = path[:-len(lineno)-2]
+        
+        # NOTE 代码显示
+        if not os.path.exists(filename):
+            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
+        elif self.panel.link.path == filename:
+            code = ''
+        else:
+            try:
+                with open(filename,'r') as f:
+                    code = f.read()
+            except:
+                code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
+        
+        self.panel.link.setText(filename,lineno)
+        self.panel.editor.setPlainText(code) if code else None
+        self.panel.editor.paintLine(int(lineno))
+        
         # self.Filter_Table.lineEdit.clear()
 
     def addItems(self,data):
@@ -401,7 +426,7 @@ class Debugger_Panel(QtWidgets.QWidget):
         
         self.toolbar = toolbar
 
-        self.info_panel = Debugger_Info()
+        self.info_panel = Debugger_Info(self)
 
         topleft = QtWidgets.QFrame()
         topleft.setFrameShape(QtWidgets.QFrame.StyledPanel)
@@ -429,6 +454,51 @@ class Debugger_Panel(QtWidgets.QWidget):
         self.info_panel.initialize()
         self.editor.initialize()
         self.link.initialize()
+    
+    def clear(self):
+        self.info_panel.clear()
+        self.info_panel.Scope_List.clear()
+        
+    def updatePanel(self,MPDB,f_locals):
+        filename = MPDB.curframe.f_code.co_filename
+        lineno = MPDB.curframe.f_lineno
+        var_data = f_locals if f_locals else MPDB.curframe_locals
+        
+        # NOTE 代码显示
+        if not os.path.exists(filename):
+            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
+        elif self.link.path == filename:
+            code = ''
+        else:
+            try:
+                with open(filename,'r') as f:
+                    code = f.read()
+            except:
+                code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
+            
+        # NOTE 更新路径和代码
+        self.link.setText(filename,lineno)
+        self.editor.setPlainText(code) if code else None
+        self.editor.paintLine(lineno)
+        self.info_panel.clear()
+        self.info_panel.addItems(var_data)
+        
+        # NOTE 更新函数域
+        Scope_List = self.info_panel.Scope_List
+        Scope_List.clear()
+        
+        stack_list = MPDB.stack if int(cmds.about(v=1)) > 2017 else MPDB.stack[2:]
+        for stack,lineno in stack_list:
+            filename = stack.f_code.co_filename
+            item = QtWidgets.QListWidgetItem("%s(%s)" % (filename,lineno))
+            item.frame = stack
+            item.locals = stack.f_locals
+            item.globals = stack.f_globals
+            Scope_List.addItem(item)
+
+        # NOTE 选择当前函数域最后的 item
+        if stack_list:
+            Scope_List.setCurrentItem(item)
 
     def mayaShow(self):
         ptr = mayaShow(self,self.windowName)

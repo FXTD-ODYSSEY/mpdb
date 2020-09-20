@@ -58,7 +58,14 @@ class MPDB(Pdb,object):
         self.widget = widget
         DIR = os.path.dirname(__file__)
         self.py_list = [os.path.join(DIR,filename) for filename in os.listdir(DIR) if filename.endswith(".py")]
-        
+    
+    def clearPanel(self):
+        # NOTE 清空面板数据
+        self.widget.panel.clear()
+
+    def updatePanel(self,f_locals=None):
+        self.widget.panel.updatePanel(self,f_locals)
+         
     @debugMode
     def interaction(self, frame, traceback):
         self.setup(frame, traceback)
@@ -95,57 +102,6 @@ class MPDB(Pdb,object):
       
             line = self.precmd(line)
             stop = self.onecmd(line)
-
-    
-    def clearPanel(self):
-        # NOTE 清空面板数据
-        panel = self.widget.panel
-        # panel.link.setText("")
-        # panel.editor.setPlainText("")
-        panel.info_panel.clear()
-        panel.info_panel.Scope_List.clear()
-
-    def updatePanel(self,f_locals=None):
-        filename = self.curframe.f_code.co_filename
-        lineno = self.curframe.f_lineno
-        var_data = f_locals if f_locals else self.curframe_locals
-
-        panel = self.widget.panel
-        # NOTE 代码显示
-        if not os.path.exists(filename):
-            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
-        elif panel.link.path == filename:
-            code = ''
-        else:
-            try:
-                with open(filename,'r') as f:
-                    code = f.read()
-            except:
-                code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
-            
-        # NOTE 更新路径和代码
-        panel.link.setText(filename,lineno)
-        panel.editor.setPlainText(code) if code else None
-        panel.editor.paintLine(lineno)
-        panel.info_panel.clear()
-        panel.info_panel.addItems(var_data)
-        
-        # NOTE 更新函数域
-        Scope_List = panel.info_panel.Scope_List
-        Scope_List.clear()
-        
-        stack_list = self.stack if int(cmds.about(v=1)) > 2017 else self.stack[2:]
-        for stack,lineno in stack_list:
-            filename = stack.f_code.co_filename
-            item = QtWidgets.QListWidgetItem("%s(%s)" % (filename,lineno))
-            item.frame = stack
-            item.locals = stack.f_locals
-            item.globals = stack.f_globals
-            Scope_List.addItem(item)
-
-        # NOTE 选择当前函数域最后的 item
-        if stack_list:
-            Scope_List.setCurrentItem(item)
 
     def default(self, line):
         if line[:1] == '!': line = line[1:]
