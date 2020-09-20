@@ -100,8 +100,8 @@ class MPDB(Pdb,object):
     def clearPanel(self):
         # NOTE 清空面板数据
         panel = self.widget.panel
-        panel.link.setText("")
-        panel.editor.setPlainText("")
+        # panel.link.setText("")
+        # panel.editor.setPlainText("")
         panel.info_panel.clear()
         panel.info_panel.Scope_List.clear()
 
@@ -110,20 +110,22 @@ class MPDB(Pdb,object):
         lineno = self.curframe.f_lineno
         var_data = f_locals if f_locals else self.curframe_locals
 
+        panel = self.widget.panel
         # NOTE 代码显示
-        if os.path.exists(filename):
+        if not os.path.exists(filename):
+            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
+        elif panel.link.path == filename:
+            code = ''
+        else:
             try:
                 with open(filename,'r') as f:
                     code = f.read()
             except:
                 code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "read fail"))
-        else:
-            code = "%s %s" % (filename , QtWidgets.QApplication.translate("reading", "file not exists"))
-        
+            
         # NOTE 更新路径和代码
-        panel = self.widget.panel
         panel.link.setText(filename,lineno)
-        panel.editor.setPlainText(code)
+        panel.editor.setPlainText(code) if code else None
         panel.editor.paintLine(lineno)
         panel.info_panel.clear()
         panel.info_panel.addItems(var_data)
